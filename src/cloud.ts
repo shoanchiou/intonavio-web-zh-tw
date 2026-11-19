@@ -7,18 +7,15 @@ export const cloudUrl = (import.meta.env.VITE_INTONAVIO_CLOUD_URL ?? "")
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export async function fetchCloudAudio(
-  videoId: string,
-  accessCode: string,
+export async function waitForAudioService(
+  base: string,
   signal: AbortSignal,
-  onStatus: (message: string) => void,
-): Promise<Blob> {
-  onStatus(t("cloudWaking"));
+): Promise<boolean> {
   const wakeDeadline = AbortSignal.timeout(125000);
   while (!wakeDeadline.aborted) {
     signal.throwIfAborted();
     try {
-      const response = await fetch(cloudUrl + "/health", {
+      const response = await fetch(base + "/health", {
         cache: "no-store",
         redirect: "error",
         signal: AbortSignal.any([
@@ -31,13 +28,24 @@ export async function fetchCloudAudio(
         response.ok &&
         (await response.json()).service === "intonavio-cloud-audio"
       )
-        break;
+        return true;
     } catch {
       signal.throwIfAborted();
     }
     await wait(2000);
   }
-  if (wakeDeadline.aborted) throw new Error(t("cloudWakeTimeout"));
+  return false;
+}
+
+export async function fetchCloudAudio(
+  videoId: string,
+  accessCode: string,
+  signal: AbortSignal,
+  onStatus: (message: string) => void,
+): Promise<Blob> {
+  onStatus(t("cloudWaking"));
+  if (!(await waitForAudioService(cloudUrl, signal)))
+    throw new Error(t("cloudWakeTimeout"));
 
   onStatus(t("cloudFetching"));
   let response;

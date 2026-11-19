@@ -16,6 +16,11 @@ const zhTW = {
   cloudWrongCode: "雲端試用碼不正確，請重新輸入。",
   cloudBusy: "雲端試用服務忙碌或已達用量限制，請稍後再試。",
   cloudNoAudio: "雲端服務未能取得這首歌的音訊。請試另一首歌，或匯入音檔。",
+  googleEnter: "使用 Google 帳號登入，開始唱歌音準練習。",
+  googleSignOut: "登出",
+  googleChecking: "正在確認 Google 登入。若服務剛啟動，可能需要約一分鐘。",
+  googleRejected: "登入憑證已逾時或無法使用。請再用 Google 登入。",
+  googleUnavailable: "目前無法連上登入服務，請重新整理後重試。",
   settings: "練唱方式",
   browserMode: "播 YouTube 跟唱",
   browserDetails:
@@ -182,6 +187,14 @@ const en: Record<Key, string> = {
     "The cloud service is busy or has reached its usage limit. Try again later.",
   cloudNoAudio:
     "The cloud service could not retrieve this song. Try another song or import an audio file.",
+  googleEnter: "Sign in with Google to start singing practice.",
+  googleSignOut: "Sign out",
+  googleChecking:
+    "Verifying Google sign-in. A cold start may take about a minute.",
+  googleRejected:
+    "The sign-in session has expired or is invalid. Sign in again.",
+  googleUnavailable:
+    "The sign-in service is unavailable. Refresh and try again.",
   settings: "Ways to practice",
   browserMode: "Sing along to YouTube",
   browserDetails:

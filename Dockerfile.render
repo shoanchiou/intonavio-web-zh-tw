@@ -8,6 +8,9 @@ RUN apt-get update \
 
 ENV PATH="/opt/youtube/bin:$PATH"
 WORKDIR /app
+COPY cloud/package*.json ./cloud/
+RUN npm ci --prefix cloud --omit=dev --ignore-scripts
+COPY cloud/google-auth.mjs ./cloud/
 COPY server/cloud-audio.mjs server/youtube.mjs ./server/
 USER node
 EXPOSE 10000

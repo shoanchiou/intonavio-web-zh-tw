@@ -35,6 +35,12 @@ Mac 啟動器也會檢查 `ffmpeg` 和 `ffprobe` 是否能執行。兩個工具�
 
 正式把網址接到網頁前，使用有權處理的短片驗證 Render 能取得音訊。前端建置時設定公開的 `VITE_INTONAVIO_CLOUD_URL` 為該服務 URL，就會顯示雲端試用選項。瀏覽器會等待服務喚醒，再取得 MP3 並分析。試用碼留在當前網頁，歌曲仍由瀏覽器分離與保存。服務每次處理一首，15 分鐘最多接受六次取音，預設只允許本專案的 GitHub Pages 跨站請求。
 
+## Google 登入
+
+設定 Render 環境變數 `INTONAVIO_GOOGLE_CLIENT_ID`，重建服務後可驗證 Google 登入。前端用相同的 Web 用戶端 ID 建置 `VITE_INTONAVIO_GOOGLE_CLIENT_ID`，並以 `VITE_INTONAVIO_AUTH_URL` 指定驗證服務。Google Cloud 的核准 JavaScript 來源是 `https://shoanchiou.github.io`。
+
+Google 登入用來進入練唱網頁，曲庫仍儲存在目前瀏覽器。Windows 和 Mac 套件留在本機使用流程。雲端取音沿用各自的試用設定。
+
 ## 架構與費用
 
 GitHub Pages 提供 YouTube 串流播放、循環、變速、麥克風音高、音階暖身及本機音檔功能。本機版在 `127.0.0.1:3218` 提供網頁與背景工作，只接受這台電腦的連線。第一次處理時會建立專案專用的 Python 環境，並下載、校驗人聲模型。

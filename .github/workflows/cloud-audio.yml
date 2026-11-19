@@ -7,6 +7,7 @@ on:
       - ".dockerignore"
       - "Dockerfile.render"
       - "render.yaml"
+      - "cloud/**"
       - "server/cloud-audio.mjs"
       - "server/youtube.mjs"
       - "tests/cloud-audio.test.mjs"

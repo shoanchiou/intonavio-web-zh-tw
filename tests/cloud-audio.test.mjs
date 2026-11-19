@@ -12,6 +12,7 @@ test("the cloud server warms up publicly and accepts audio requests only with a 
   const server = createAudioServer({
     token,
     origin,
+    verifyGoogle: async (credential) => credential === "verified.google.token",
     async fetchAudio(id, _scratch, _signal, options) {
       assert.equal(id, "HOfdboHvshg");
       assert.equal(options.runtime, "node");
@@ -33,6 +34,28 @@ test("the cloud server warms up publicly and accepts audio requests only with a 
   const health = await fetch(url + "/health", { headers: { Origin: origin } });
   assert.equal(health.headers.get("access-control-allow-origin"), origin);
   assert.equal((await health.json()).service, "intonavio-cloud-audio");
+  const signIn = (credential) =>
+    fetch(url + "/api/auth/google", {
+      method: "POST",
+      headers: { Origin: origin, Authorization: "Bearer " + credential },
+    });
+  assert.equal((await signIn(token)).status, 401);
+  assert.equal((await signIn("fake.google.token")).status, 401);
+  const signedIn = await signIn("verified.google.token");
+  assert.equal(signedIn.status, 200);
+  assert.deepEqual(await signedIn.json(), { signedIn: true });
+  assert.equal(
+    (
+      await fetch(route, {
+        method: "POST",
+        headers: {
+          Origin: origin,
+          Authorization: "Bearer verified.google.token",
+        },
+      })
+    ).status,
+    401,
+  );
   const preflight = await fetch(route, {
     method: "OPTIONS",
     headers: { Origin: origin },

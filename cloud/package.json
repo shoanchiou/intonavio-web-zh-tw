@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "name": "intonavio-cloud-auth",
+  "version": "0.1.0",
+  "dependencies": {
+    "google-auth-library": "11.3.4"
+  },
+  "type": "module"
+}

@@ -22,6 +22,7 @@ export function createAudioServer({
   origin = productionOrigin,
   scratch = join(tmpdir(), "intonavio-audio"),
   fetchAudio = downloadAudio,
+  verifyGoogle,
 }) {
   if (!token || token.length < 24)
     throw new Error(
@@ -42,8 +43,10 @@ export function createAudioServer({
     if (req.method === "GET" && req.url === "/health")
       return json(res, 200, { service: "intonavio-cloud-audio" });
 
+    const googleSignIn =
+      Boolean(verifyGoogle) && req.url === "/api/auth/google";
     const match = /^\/api\/audio\/([A-Za-z0-9_-]{11})$/.exec(req.url);
-    if (!match) return json(res, 404, { error: "path" });
+    if (!match && !googleSignIn) return json(res, 404, { error: "path" });
     if (req.method === "OPTIONS") {
       res.writeHead(204, {
         "Access-Control-Allow-Methods": "POST",
@@ -54,6 +57,21 @@ export function createAudioServer({
       return;
     }
     if (req.method !== "POST") return json(res, 405, { error: "method" });
+    if (googleSignIn) {
+      const idToken =
+        /^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/.exec(
+          req.headers.authorization ?? "",
+        )?.[1];
+      if (!idToken || idToken.length > 4096)
+        return json(res, 401, { error: "auth" });
+      try {
+        if (await verifyGoogle(idToken))
+          return json(res, 200, { signedIn: true });
+      } catch {
+        // Token details must not be written to logs.
+      }
+      return json(res, 401, { error: "auth" });
+    }
     if (!timingSafeEqual(digest(req.headers.authorization ?? ""), authorized))
       return json(res, 401, { error: "access" });
     if (
@@ -104,7 +122,12 @@ export function createAudioServer({
 }
 
 if (import.meta.main) {
+  const clientId = process.env.INTONAVIO_GOOGLE_CLIENT_ID;
+  const verifyGoogle = clientId
+    ? (await import("../cloud/google-auth.mjs")).googleVerifier(clientId)
+    : undefined;
   const server = createAudioServer({
+    verifyGoogle,
     token: process.env.INTONAVIO_CLOUD_TOKEN,
     origin: process.env.INTONAVIO_WEB_ORIGIN,
   });

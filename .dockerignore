@@ -3,3 +3,7 @@
 !server/
 !server/cloud-audio.mjs
 !server/youtube.mjs
+!cloud/
+!cloud/package.json
+!cloud/package-lock.json
+!cloud/google-auth.mjs
