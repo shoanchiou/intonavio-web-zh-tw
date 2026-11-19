@@ -29,9 +29,15 @@ Mac 啟動器也會檢查 `ffmpeg` 和 `ffprobe` 是否能執行。兩個工具�
 
 ## Render 免費試用
 
-在 Render 新加坡免費服務的實測中，服務可啟動且會驗證試用碼。兩支 Blender 公開短片的取音請求都收到 YouTube 的登入驗證要求。正式練唱網頁的 YouTube 取音使用本機練唱工具，也可直接匯入音檔在瀏覽器裡處理。
+在 Render 新加坡免費服務的測試中，未登入的取音請求收到 YouTube 登入驗證要求。Render 版可讀取 `cookies.txt` Secret File，由服務端的 yt-dlp 使用 YouTube 登入工作階段下載。
 
 `render.yaml` 和 `Dockerfile.render` 提供獨立的雲端取音服務。從 Render 網頁用公開 Git 儲存庫建立 **Web Service**，選 Docker、`./Dockerfile.render`、Free 和健康檢查 `/health`。在 Render 的「環境變數」生成 `INTONAVIO_CLOUD_TOKEN`，只把試用碼私下提供給受邀者。也可使用 Blueprint，由 Render 自動生成試用碼。
+
+1. 用無痕視窗登入自己的 YouTube 小帳號，在同一視窗開啟 `https://www.youtube.com/robots.txt`，用可信任的本機擴充功能匯出該網站的 Netscape `cookies.txt`，再關閉無痕視窗。[yt-dlp 匯出說明](https://github.com/yt-dlp/yt-dlp/wiki/Extractors#exporting-youtube-cookies)
+2. 在 Render 的 `intonavio-audio` 服務選 **Environment → Secret Files → Add Secret File**。Filename 填 `cookies.txt`，Contents 貼上匯出的內容。儲存並部署包含新 Dockerfile 的版本。[Render Secret Files 說明](https://render.com/docs/configure-environment-variables#secret-files)
+3. 用有權處理的公開短片測試。若 Render 日誌顯示 YouTube 要求重新驗證，請更新同一個 Secret File。若新 Cookie 仍失敗，Render 機房的 IP 可能也受到限制。
+
+服務每次下載會將 `/etc/secrets/cookies.txt` 複製到權限為 `0600` 的暫存檔，結束時與下載檔一起刪除。Cookie 只應貼到 Render 的 Secret Files。
 
 正式把網址接到網頁前，使用有權處理的短片驗證 Render 能取得音訊。前端建置時設定公開的 `VITE_INTONAVIO_CLOUD_URL` 為該服務 URL，就會顯示雲端試用選項。瀏覽器會等待服務喚醒，再取得 MP3 並分析。試用碼留在當前網頁，歌曲仍由瀏覽器分離與保存。服務每次處理一首，15 分鐘最多接受六次取音，預設只允許本專案的 GitHub Pages 跨站請求。
 

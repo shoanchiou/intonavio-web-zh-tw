@@ -6,7 +6,8 @@ RUN apt-get update \
     && python3 -m venv /opt/youtube \
     && /opt/youtube/bin/pip install --no-cache-dir --only-binary=:all: 'yt-dlp[default]==2026.10.26'
 
-ENV PATH="/opt/youtube/bin:$PATH"
+ENV PATH="/opt/youtube/bin:$PATH" \
+    INTONAVIO_YOUTUBE_COOKIES_FILE="/etc/secrets/cookies.txt"
 WORKDIR /app
 COPY cloud/package*.json ./cloud/
 RUN npm ci --prefix cloud --omit=dev --ignore-scripts

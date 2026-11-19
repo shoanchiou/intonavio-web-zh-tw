@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { delimiter, join } from "node:path";
 import test from "node:test";
 import { createAudioServer } from "../server/cloud-audio.mjs";
 
@@ -93,4 +96,70 @@ test("the cloud server warms up publicly and accepts audio requests only with a 
   assert.equal(ready.status, 200);
   assert.equal(ready.headers.get("content-type"), "audio/mpeg");
   assert.equal(await ready.text(), "fake test mp3");
+});
+
+test("Render downloads use a private cookie copy and sanitize login errors", {
+  skip: process.platform === "win32",
+}, async (context) => {
+  const directory = await mkdtemp(join(tmpdir(), "intonavio-render-test-"));
+  const scratch = join(directory, "jobs");
+  const cookiesFile = join(directory, "render-secret.txt");
+  const cookieValue = "synthetic-cookie-for-tests";
+  const cookies = `# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tTRUE\t0\tTEST\t${cookieValue}\n`;
+  const originalPath = process.env.PATH;
+  const logs = [];
+  const token = "local-test-code-without-production-access";
+  const server = createAudioServer({ token, scratch, cookiesFile });
+  context.after(async () => {
+    process.env.PATH = originalPath;
+    server.closeAllConnections();
+    server.close();
+    await rm(directory, { recursive: true, force: true });
+  });
+  await writeFile(cookiesFile, cookies, { mode: 0o400 });
+  await writeFile(join(directory, "yt-dlp"), `#!/usr/bin/env node
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const args = process.argv.slice(2);
+if (args.at(-1).endsWith('NoCookie001')) {
+  assert.ok(!args.includes('--cookies'));
+  fs.writeFileSync('FULL.mp3', 'test audio');
+  process.exit();
+}
+const copy = args[args.indexOf('--cookies') + 1];
+assert.equal(copy, require('node:path').join(process.cwd(), 'cookies.txt'));
+assert.equal(fs.statSync(copy).mode & 0o777, 0o600);
+assert.equal(fs.readFileSync(copy, 'utf8'), ${JSON.stringify(cookies)});
+assert.ok(args.includes('--no-cache-dir'));
+fs.appendFileSync(copy, '# rewrite from yt-dlp\\n');
+if (args.at(-1).endsWith('SignInTest1')) {
+  console.error('Sign in to confirm: ${cookieValue}');
+  process.exit(1);
+}
+fs.writeFileSync('FULL.mp3', 'test audio');
+`, { mode: 0o700 });
+  process.env.PATH = [directory, originalPath].join(delimiter);
+  context.mock.method(console, "error", (...messages) => logs.push(messages.join(" ")));
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const request = (id) => fetch(`http://127.0.0.1:${server.address().port}/api/audio/${id}`, {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token },
+  });
+
+  const result = await request("HOfdboHvshg");
+  assert.equal(result.status, 200);
+  assert.equal(await result.text(), "test audio");
+  assert.deepEqual(await readdir(scratch), []);
+  assert.equal(await readFile(cookiesFile, "utf8"), cookies);
+  const rejected = await request("SignInTest1");
+  assert.equal(rejected.status, 502);
+  assert.deepEqual(await rejected.json(), { error: "unavailable" });
+  assert.deepEqual(await readdir(scratch), []);
+  assert.match(logs.join("\n"), /設定或更新 cookies\.txt/);
+  assert.ok(!logs.join("\n").includes(cookieValue));
+  await rm(cookiesFile);
+  const anonymous = await request("NoCookie001");
+  assert.equal(anonymous.status, 200);
+  assert.equal(await anonymous.text(), "test audio");
 });

@@ -22,6 +22,7 @@ export function createAudioServer({
   origin = productionOrigin,
   scratch = join(tmpdir(), "intonavio-audio"),
   fetchAudio = downloadAudio,
+  cookiesFile,
   verifyGoogle,
 }) {
   if (!token || token.length < 24)
@@ -103,7 +104,7 @@ export function createAudioServer({
         match[1],
         scratch,
         AbortSignal.any([abort.signal, AbortSignal.timeout(145000)]),
-        { runtime: "node", maxBytes: 20 * 1024 * 1024 },
+        { runtime: "node", maxBytes: 20 * 1024 * 1024, cookiesFile },
       );
       if (res.destroyed) return;
       res.writeHead(200, {
@@ -130,6 +131,7 @@ if (import.meta.main) {
     verifyGoogle,
     token: process.env.INTONAVIO_CLOUD_TOKEN,
     origin: process.env.INTONAVIO_WEB_ORIGIN,
+    cookiesFile: process.env.INTONAVIO_YOUTUBE_COOKIES_FILE,
   });
   server.listen(Number(process.env.PORT || 10000), "0.0.0.0");
 }
