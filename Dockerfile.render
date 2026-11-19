@@ -1,0 +1,14 @@
+FROM node:24-bookworm-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates ffmpeg python3-venv \
+    && rm -rf /var/lib/apt/lists/* \
+    && python3 -m venv /opt/youtube \
+    && /opt/youtube/bin/pip install --no-cache-dir --only-binary=:all: 'yt-dlp[default]==2026.10.26'
+
+ENV PATH="/opt/youtube/bin:$PATH"
+WORKDIR /app
+COPY server/cloud-audio.mjs server/youtube.mjs ./server/
+USER node
+EXPOSE 10000
+CMD ["node", "server/cloud-audio.mjs"]

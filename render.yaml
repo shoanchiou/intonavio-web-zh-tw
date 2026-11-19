@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: intonavio-audio
+    plan: free
+    region: singapore
+    runtime: docker
+    dockerfilePath: ./Dockerfile.render
+    healthCheckPath: /health
+    envVars:
+      - key: INTONAVIO_WEB_ORIGIN
+        value: https://shoanchiou.github.io
+      - key: INTONAVIO_CLOUD_TOKEN
+        generateValue: true

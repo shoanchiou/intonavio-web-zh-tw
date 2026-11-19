@@ -13,8 +13,6 @@ const baseArgs = [
   "15",
   "--retries",
   "1",
-  "--js-runtimes",
-  "deno",
 ];
 const videoUrl = (id) => `https://www.youtube.com/watch?v=${id}`;
 
@@ -38,7 +36,12 @@ export async function lookupVideo(id) {
 }
 
 // Adapted from workers/stem-splitter/src/youtube.py: best audio → FFmpeg → FULL.mp3.
-export async function downloadAudio(id, scratchRoot, signal) {
+export async function downloadAudio(
+  id,
+  scratchRoot,
+  signal,
+  { runtime = "deno", maxBytes = 100 * 1024 * 1024 } = {},
+) {
   await mkdir(scratchRoot, { recursive: true });
   const directory = await mkdtemp(join(scratchRoot, "youtube-"));
   const ffmpegDirectory = process.env.INTONAVIO_FFMPEG_DIR;
@@ -47,6 +50,9 @@ export async function downloadAudio(id, scratchRoot, signal) {
       "yt-dlp",
       [
         ...baseArgs,
+        ...(runtime === "node" ? ["--no-js-runtimes"] : []),
+        "--js-runtimes",
+        runtime,
         ...(ffmpegDirectory ? ["--ffmpeg-location", ffmpegDirectory] : []),
         "--format",
         "bestaudio/best",
@@ -56,7 +62,7 @@ export async function downloadAudio(id, scratchRoot, signal) {
         "--audio-quality",
         "192K",
         "--max-filesize",
-        "100M",
+        `${Math.floor(maxBytes / (1024 * 1024))}M`,
         "--match-filters",
         "duration <= 480 & !is_live",
         "--output",
@@ -74,7 +80,7 @@ export async function downloadAudio(id, scratchRoot, signal) {
     );
     const result = join(directory, "FULL.mp3");
     const info = await stat(result).catch(() => undefined);
-    if (!info?.size || info.size > 100 * 1024 * 1024)
+    if (!info?.size || info.size > maxBytes)
       throw new Error(
         "沒有取得有效音訊。請使用 8 分鐘內、可取得音訊的公開影片。",
       );
@@ -86,7 +92,7 @@ export async function downloadAudio(id, scratchRoot, signal) {
       );
     if (error?.stderr) {
       const stderr = String(error.stderr);
-      if (/no such option:\s*--js-runtimes\b/i.test(stderr)) {
+      if (/no such option:\s*--(?:no-)?js-runtimes\b/i.test(stderr)) {
         const update =
           process.platform === "darwin"
             ? "請關閉舊的終端機視窗，重新開啟新版 Mac 套件的啟動檔。看到更新提示時輸入 y，再重新處理歌曲。"

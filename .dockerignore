@@ -1,0 +1,5 @@
+**
+!Dockerfile.render
+!server/
+!server/cloud-audio.mjs
+!server/youtube.mjs
