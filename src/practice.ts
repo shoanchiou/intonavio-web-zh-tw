@@ -59,6 +59,7 @@ export class Practice {
     };
     this.seek.oninput = () => {
       this.seekTo(Number(this.seek.value));
+      this.graph.resetViewport();
       this.reset();
       this.syncVideo(true);
     };
@@ -68,7 +69,10 @@ export class Practice {
       this.syncVideo(true);
     };
     element("difficulty").onchange = () => this.reset();
-    element("octave").onchange = () => this.reset();
+    element("octave").onchange = () => {
+      this.graph.resetViewport();
+      this.reset();
+    };
     element("a").onclick = () => {
       this.markerA = this.time;
       this.markerB = undefined;
@@ -98,6 +102,7 @@ export class Practice {
     this.isVideoOpen = false;
     this.markerA = this.markerB = undefined;
     this.track.value = "original";
+    this.graph.resetViewport();
     this.playTrack("original");
     this.reset();
     this.render();
@@ -236,6 +241,7 @@ export class Practice {
     this.micButton.disabled = true;
     element("mic-status").textContent = t("micPending");
     try {
+      if (!this.song) this.points = [];
       this.micStartedAt = performance.now();
       await this.microphone.start((detection) => this.onDetection(detection));
     } catch {
@@ -308,6 +314,10 @@ export class Practice {
       this.song?.reference ?? [],
       this.points,
       this.transpose,
+      now,
+      !this.song?.reference?.length &&
+        this.microphone.active &&
+        (!this.song || this.playing),
     );
     requestAnimationFrame(this.tick);
   };

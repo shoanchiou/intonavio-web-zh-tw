@@ -127,15 +127,15 @@
               role="img"
               aria-label="音高走勢圖：參考旋律與你的聲音"
             ></canvas>
-            <div class="chart-legend">
-              <span
-                ><i class="reference"></i
-                ><span data-i18n="referenceLegend">參考旋律</span></span
-              ><span
-                ><i class="live"></i
-                ><span data-i18n="liveLegend">你的聲音</span></span
-              >
-            </div>
+          </div>
+          <div class="chart-legend">
+            <span
+              ><i class="reference"></i
+              ><span data-i18n="referenceLegend">參考旋律</span></span
+            ><span
+              ><i class="live"></i
+              ><span data-i18n="liveLegend">你的聲音</span></span
+            >
           </div>
           <div class="transport">
             <button id="play" class="play" disabled data-i18n="play">
@@ -150,8 +150,10 @@
               value="0"
               step="0.01"
               disabled
-            /><span id="time">0:00 / 0:00</span
-            ><label class="sr-only" for="track">音軌</label
+            /><span id="time">0:00 / 0:00</span>
+          </div>
+          <div class="playback-options">
+            <label class="sr-only" for="track" data-i18n="track">音軌</label
             ><select id="track">
               <option value="original" data-i18n="original">原曲</option>
               <option value="vocals" data-i18n="vocals" disabled>人聲</option>
@@ -159,6 +161,16 @@
                 伴奏
               </option>
             </select>
+            <label class="inline-setting"
+              ><span data-i18n="speed">播放速度</span
+              ><select id="speed">
+                <option value="0.5">0.5×</option>
+                <option value="0.75">0.75×</option>
+                <option value="1" selected>1.0×</option>
+                <option value="1.25">1.25×</option>
+                <option value="1.5">1.5×</option>
+              </select></label
+            >
           </div>
           <div class="loop-controls">
             <button id="a" class="ghost" data-i18n="markerA" disabled>
@@ -177,15 +189,6 @@
         </section>
         <section class="settings-grid">
           <label
-            ><span data-i18n="speed">播放速度</span
-            ><select id="speed">
-              <option value="0.5">0.5×</option>
-              <option value="0.75">0.75×</option>
-              <option value="1" selected>1.0×</option>
-              <option value="1.25">1.25×</option>
-              <option value="1.5">1.5×</option>
-            </select></label
-          ><label
             ><span data-i18n="difficulty">評分難度</span
             ><select id="difficulty">
               <option value="beginner" data-i18n="beginner">入門</option>
@@ -329,18 +332,26 @@
       <p data-i18n="browserDetails">
         可播放 YouTube、設定循環和變速，並用麥克風看自己的音高。
       </p>
-      <h3 data-i18n="localMode">Windows 本機版 · 選用</h3>
+      <h3 data-i18n="localMode">本機背景運算 · 選用</h3>
       <p data-i18n="localDetails">
         需要分離 YouTube
-        人聲或跟原唱比音準時，下載、解壓縮並雙擊「啟動唱歌音準練習」。使用時保留啟動視窗。
+        人聲或跟原唱比音準時，下載對應系統的套件，解壓縮後雙擊「啟動唱歌音準練習」。使用時請保留啟動視窗。
+      </p>
+      <p data-i18n="macDetails">
+        macOS 14 以上適用，支援 Apple Silicon 與
+        Intel。首次啟動時，依終端機提示使用 Homebrew 安裝缺少的依賴。
       </p>
       <div class="button-row">
         <a
           href="https://shoanchiou.github.io/intonavio-web-zh-tw/Intonavio-Windows.zip"
           data-i18n="downloadWindows"
           >下載 Windows 套件</a
+        ><a
+          href="https://shoanchiou.github.io/intonavio-web-zh-tw/Intonavio-macOS.zip"
+          data-i18n="downloadMac"
+          >下載 macOS 套件</a
         ><a id="local-link" href="http://127.0.0.1:3218/" data-i18n="openLocal"
-          >開啟 Windows 本機版</a
+          >開啟本機版</a
         >
       </div>
     </dialog>

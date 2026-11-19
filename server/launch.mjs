@@ -13,8 +13,13 @@ async function ready() {
   }
 }
 function openBrowser() {
+  if (process.argv.includes("--no-browser")) return;
+  const [command, args] =
+    process.platform === "darwin"
+      ? ["open", [url]]
+      : ["rundll32.exe", ["url.dll,FileProtocolHandler", url]];
   // The URL is constant and only points to the service on this machine.
-  const browser = spawn("rundll32.exe", ["url.dll,FileProtocolHandler", url], {
+  const browser = spawn(command, args, {
     stdio: "ignore",
     windowsHide: true,
     detached: true,
@@ -30,6 +35,7 @@ else {
     { stdio: "inherit", windowsHide: true },
   );
   // Keep the service tied to the launcher window. Ctrl+C stops the service.
+  process.once("SIGTERM", () => server.kill());
   server.on("exit", (code) => {
     process.exitCode = code ?? 1;
   });

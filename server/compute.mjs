@@ -62,7 +62,15 @@ async function ensureModel(signal, update) {
 
 async function ensurePython(signal, update) {
   const venv = join(directory, "compute");
-  const python = join(venv, "Scripts", "python.exe");
+  const windows = process.platform === "win32";
+  const intelMac = process.platform === "darwin" && process.arch === "x64";
+  const python = windows
+    ? join(venv, "Scripts", "python.exe")
+    : join(venv, "bin", "python");
+  const command = windows ? "py" : "python3.13";
+  const pythonOptions = windows ? ["-3.13"] : [];
+  // ONNX Runtime ended Intel macOS wheel builds after the 1.23 series.
+  const onnxVersion = intelMac ? "1.23.2" : "1.32.0";
   const options = {
     signal,
     timeout: 300000,
@@ -77,7 +85,7 @@ async function ensurePython(signal, update) {
   }
   update("setup-engine", 0);
   try {
-    await exec("py", ["-3.13", "-m", "venv", venv], options);
+    await exec(command, [...pythonOptions, "-m", "venv", venv], options);
     await exec(
       python,
       [
@@ -88,7 +96,7 @@ async function ensurePython(signal, update) {
         "--only-binary=:all:",
         "--disable-pip-version-check",
         "numpy==2.5.5",
-        "onnxruntime==1.32.0",
+        `onnxruntime==${onnxVersion}`,
       ],
       options,
     );

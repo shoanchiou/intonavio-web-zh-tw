@@ -1,16 +1,20 @@
 const zhTW = {
   "setup-engine": "正在準備本機運算環境…",
   backgroundHint:
-    "Windows 本機服務會在背景分離人聲與分析音高。可關閉分頁，請讓本機服務繼續執行。",
+    "本機服務會在背景分離人聲與分析音高。可關閉分頁，請讓本機服務繼續執行。",
   backgroundWorking: "工作已送往本機服務，重新整理或關閉分頁後仍可回來查看。",
   reconnecting: "與本機服務的連線暫時中斷，正在重連。請確認啟動器視窗仍開啟。",
   settings: "環境設定",
   browserMode: "基本版 · 直接使用",
   browserDetails: "可播放 YouTube、設定循環和變速，並用麥克風看自己的音高。",
-  localMode: "Windows 本機版 · 選用",
+  localMode: "本機背景運算 · 選用",
   localDetails:
-    "需要分離 YouTube 人聲或跟原唱比音準時，下載、解壓縮並雙擊「啟動唱歌音準練習」。使用時保留啟動視窗。",
+    "需要分離 YouTube 人聲或跟原唱比音準時，下載對應系統的套件，解壓縮後雙擊「啟動唱歌音準練習」。使用時請保留啟動視窗。",
   downloadWindows: "下載 Windows 套件",
+  downloadMac: "下載 macOS 套件",
+  macDetails:
+    "macOS 14 以上適用，支援 Apple Silicon 與 Intel。首次啟動時，依終端機提示使用 Homebrew 安裝缺少的依賴。",
+  track: "音軌",
   streamOnly: "加入並播放影片",
   openWatch: "在 YouTube 開啟",
   addSong: "＋ 加入歌曲",
@@ -23,8 +27,8 @@ const zhTW = {
   badUrl: "請貼上有效的 YouTube 影片連結。",
   checking: "正在檢查影片…",
   fetching: "正在取得 YouTube 音訊…",
-  openLocal: "開啟 Windows 本機版",
-  localRequired: "YouTube 加歌需先在 Windows 執行本機服務。",
+  openLocal: "開啟本機版",
+  localRequired: "分離 YouTube 人聲需先執行本機服務。",
   showVideo: "顯示 YouTube 影片",
   hideVideo: "隱藏 YouTube 影片",
   samples: "筆取樣",
@@ -91,7 +95,7 @@ const zhTW = {
   step2: "確認影片後加入，等待人聲分離與音高分析。",
   step3: "開啟麥克風，切換到伴奏，播放並跟唱。",
   limits:
-    "YouTube 播放可直接使用。要分離 YouTube 音軌或產生原唱音高，請開啟 Windows 本機版。",
+    "YouTube 播放可直接使用。要分離 YouTube 音軌或產生原唱音高，請開啟本機版。",
   choose: "請先選擇歌曲。",
   importing: "正在匯入…",
   imported: "已匯入，可以播放或分離人聲。",
@@ -123,7 +127,7 @@ type Key = keyof typeof zhTW;
 const en: Record<Key, string> = {
   "setup-engine": "Preparing the local processing environment…",
   backgroundHint:
-    "The Windows service separates vocals and analyzes pitch in the background. You can close this tab while the local service is running.",
+    "The local service separates vocals and analyzes pitch in the background. You can close this tab while the local service is running.",
   backgroundWorking:
     "Job sent. You can refresh or close this tab and return to check its progress.",
   reconnecting:
@@ -132,10 +136,14 @@ const en: Record<Key, string> = {
   browserMode: "Basic · ready to use",
   browserDetails:
     "Play YouTube, set a loop, change speed, and see your microphone pitch.",
-  localMode: "Windows local app · optional",
+  localMode: "Local background processing · optional",
   localDetails:
-    "To separate YouTube vocals or compare pitch, download and extract the Windows package, then run the launcher. Keep its window open.",
+    "To separate YouTube vocals or compare pitch, download the package for your computer, extract it, and double-click the launcher. Keep its window open.",
   downloadWindows: "Download Windows package",
+  downloadMac: "Download macOS package",
+  macDetails:
+    "For macOS 14 or later on Apple Silicon and Intel. On first launch, follow the Terminal prompts to install missing dependencies with Homebrew.",
+  track: "Audio track",
   streamOnly: "Add and play video",
   openWatch: "Open on YouTube",
   addSong: "+ Add song",
@@ -148,8 +156,8 @@ const en: Record<Key, string> = {
   badUrl: "Paste a valid YouTube video URL.",
   checking: "Checking video…",
   fetching: "Retrieving YouTube audio…",
-  openLocal: "Open the Windows local app",
-  localRequired: "Start the Windows local service to add YouTube songs.",
+  openLocal: "Open the local app",
+  localRequired: "Start the local service to separate YouTube vocals.",
   showVideo: "Show YouTube video",
   hideVideo: "Hide YouTube video",
   samples: "samples",
@@ -217,7 +225,7 @@ const en: Record<Key, string> = {
   step2: "Confirm the video and wait for separation and pitch analysis.",
   step3: "Turn on the microphone, switch to Instrumental, play and sing along.",
   limits:
-    "Play YouTube directly. For YouTube stems and reference pitch, open the Windows local app.",
+    "Play YouTube directly. For YouTube stems and reference pitch, open the local app.",
   choose: "Select a song first.",
   importing: "Importing…",
   imported: "Imported. You can play it or separate the vocals.",

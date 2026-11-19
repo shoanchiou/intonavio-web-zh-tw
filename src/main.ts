@@ -22,7 +22,7 @@ import {
   extractVideoId,
   isLocalApp,
   previewVideo,
-  WINDOWS_URL,
+  LOCAL_URL,
   type VideoInfo,
 } from "./youtube";
 
@@ -324,7 +324,7 @@ const prepareButton = element<HTMLButtonElement>("prepare");
 const streamButton = element<HTMLButtonElement>("add-stream");
 const environmentDialog = element<HTMLDialogElement>("environment-dialog");
 function openEnvironment(): void {
-  const url = new URL(WINDOWS_URL);
+  const url = new URL(LOCAL_URL);
   const id = selected?.videoId;
   if (id) url.searchParams.set("v", id);
   element<HTMLAnchorElement>("local-link").href = url.href;

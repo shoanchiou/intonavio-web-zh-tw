@@ -1,0 +1,52 @@
+name: macOS background processing
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/macos.yml"
+      - "*.command"
+      - "server/**"
+      - "scripts/package.py"
+      - "tests/macos-smoke.mjs"
+      - "package*.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, macos-15-intel]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Install missing media tools
+        run: |
+          for dep in ffmpeg yt-dlp deno; do
+            command -v "$dep" || brew install "$dep"
+          done
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Launch the downloaded package and process an audio file
+        shell: bash
+        run: |
+          packageDir="$(mktemp -d)"
+          python3.13 scripts/package.py "$packageDir" macOS
+          ditto -x -k "$packageDir/Intonavio-macOS.zip" "$packageDir"
+          launcher="$packageDir/Intonavio_唱歌音準練習/啟動唱歌音準練習.command"
+          test -x "$launcher"
+          "$launcher" --no-browser </dev/null &
+          launcherPid=$!
+          trap 'kill "$launcherPid" 2>/dev/null || true' EXIT
+          node tests/macos-smoke.mjs

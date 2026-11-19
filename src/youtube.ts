@@ -3,9 +3,9 @@ export interface VideoInfo {
   title: string;
   artist: string;
 }
-export const WINDOWS_URL = "http://127.0.0.1:3218/";
+export const LOCAL_URL = "http://127.0.0.1:3218/";
 export const isLocalApp =
-  globalThis.location?.origin === new URL(WINDOWS_URL).origin;
+  globalThis.location?.origin === new URL(LOCAL_URL).origin;
 
 // Formats supported by the original YouTubeURLValidator, with strict host and ID checks.
 export function extractVideoId(value: string): string | null {
