@@ -1,0 +1,2 @@
+assets/separate-*.js -text -diff
+assets/*.wasm -text -diff
