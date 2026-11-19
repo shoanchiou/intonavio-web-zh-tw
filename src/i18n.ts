@@ -4,6 +4,18 @@ const zhTW = {
     "本機服務會在背景分離人聲與分析音高。可關閉分頁，請讓本機服務繼續執行。",
   backgroundWorking: "工作已送往本機服務，重新整理或關閉分頁後仍可回來查看。",
   reconnecting: "與本機服務的連線暫時中斷，正在重連。請確認啟動器視窗仍開啟。",
+  cloudMode: "雲端取音試用",
+  cloudDetails:
+    "貼一次 YouTube 連結。雲端取得音訊後，瀏覽器會接著分離人聲、畫音高圖。",
+  cloudCode: "雲端試用碼",
+  cloudCodeHint: "使用專案管理者提供的試用碼。第一次處理會先喚醒雲端服務。",
+  cloudWaking: "正在喚醒雲端取音服務，可能需要約一分鐘…",
+  cloudFetching: "雲端正在取得 YouTube 音訊…",
+  cloudWakeTimeout: "雲端服務未能啟動。請稍後重試，或匯入音檔。",
+  cloudConnection: "與雲端服務的連線中斷。請重試，或匯入音檔。",
+  cloudWrongCode: "雲端試用碼不正確，請重新輸入。",
+  cloudBusy: "雲端試用服務忙碌或已達用量限制，請稍後再試。",
+  cloudNoAudio: "雲端服務未能取得這首歌的音訊。請試另一首歌，或匯入音檔。",
   settings: "練唱方式",
   browserMode: "播 YouTube 跟唱",
   browserDetails:
@@ -152,6 +164,24 @@ const en: Record<Key, string> = {
     "Job sent. You can refresh or close this tab and return to check its progress.",
   reconnecting:
     "Reconnecting to the local service. Keep the launcher window open.",
+  cloudMode: "Cloud audio trial",
+  cloudDetails:
+    "Paste a YouTube link once. The cloud service retrieves the audio and your browser separates vocals and charts pitch.",
+  cloudCode: "Cloud access code",
+  cloudCodeHint:
+    "Use the access code from the project owner. The service may need to wake up on the first request.",
+  cloudWaking:
+    "Starting the cloud audio service. This may take about a minute…",
+  cloudFetching: "Retrieving YouTube audio in the cloud…",
+  cloudWakeTimeout:
+    "The cloud audio service did not start. Try again later or import an audio file.",
+  cloudConnection:
+    "The cloud connection ended. Try again or import an audio file.",
+  cloudWrongCode: "The cloud access code is incorrect. Enter it again.",
+  cloudBusy:
+    "The cloud service is busy or has reached its usage limit. Try again later.",
+  cloudNoAudio:
+    "The cloud service could not retrieve this song. Try another song or import an audio file.",
   settings: "Ways to practice",
   browserMode: "Sing along to YouTube",
   browserDetails:

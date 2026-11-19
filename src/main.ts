@@ -10,6 +10,7 @@ import {
   type JobStage,
   type PendingJob,
 } from "./background";
+import { cloudUrl, fetchCloudAudio } from "./cloud";
 import { makeDemo } from "./demo";
 import { element } from "./dom";
 import { locale, setLocale, t } from "./i18n";
@@ -26,6 +27,7 @@ import {
   type VideoInfo,
 } from "./youtube";
 
+const cloudActive = Boolean(cloudUrl) && !isLocalApp;
 const library = element("library");
 const status = element("status");
 const progress = element<HTMLProgressElement>("processing-progress");
@@ -72,7 +74,13 @@ function setBusy(value: boolean, cancellable = false): void {
   canCancel = value && cancellable;
   progress.hidden = !value;
   if (value) progress.removeAttribute("value");
-  for (const id of ["add-song", "import", "demo", "setup-add-song"])
+  for (const id of [
+    "add-song",
+    "import",
+    "demo",
+    "setup-add-song",
+    "setup-cloud-song",
+  ])
     element<HTMLButtonElement>(id).disabled = value;
   renderLibrary();
   renderActions();
@@ -321,6 +329,8 @@ function sendSongToBackground(
 
 const dialogStatus = element("dialog-status");
 const prepareButton = element<HTMLButtonElement>("prepare");
+const cloudAccess = element("cloud-access");
+const cloudCode = element<HTMLInputElement>("cloud-code");
 const streamButton = element<HTMLButtonElement>("add-stream");
 const environmentDialog = element<HTMLDialogElement>("environment-dialog");
 const setupInstructions = element<HTMLDetailsElement>("setup-instructions");
@@ -344,6 +354,7 @@ setupComputer.onchange = (event) => {
   if (event.target instanceof HTMLInputElement)
     showSetupFor(event.target.value);
 };
+element("setup-cloud").hidden = !cloudActive;
 element("setup-install").hidden = isLocalApp;
 element("setup-running").hidden = !isLocalApp;
 
@@ -359,10 +370,11 @@ function openEnvironment(videoId?: string): void {
 }
 element("environment").onclick = () => openEnvironment();
 element("close-environment").onclick = () => environmentDialog.close();
-element("setup-add-song").onclick = () => {
-  environmentDialog.close();
-  element("add-song").click();
-};
+element("setup-add-song").onclick = element("setup-cloud-song").onclick =
+  () => {
+    environmentDialog.close();
+    element("add-song").click();
+  };
 setupPrepare.onclick = () => {
   if (!video) return;
   const id = video.id;
@@ -376,6 +388,7 @@ function resetPreview(): void {
   preview.replaceChildren();
   dialogStatus.textContent = "";
   prepareButton.hidden = true;
+  cloudAccess.hidden = true;
   streamButton.hidden = true;
   setupPrepare.hidden = true;
 }
@@ -393,7 +406,10 @@ function renderPreview(info: VideoInfo): void {
   caption.textContent = [info.title, info.artist].filter(Boolean).join(" · ");
   preview.append(image, caption);
   dialogStatus.textContent = "";
-  prepareButton.hidden = !isLocalApp;
+  prepareButton.hidden = !isLocalApp && !cloudActive;
+  cloudAccess.hidden =
+    !cloudActive ||
+    songs.some((song) => song.videoId === info.id && song.original);
   streamButton.hidden = false;
   setupPrepare.hidden = isLocalApp;
 }
@@ -448,13 +464,44 @@ streamButton.onclick = () => {
 prepareButton.onclick = () => {
   const info = video;
   if (!info) return;
-  dialog.close();
   const existing = songs.find((song) => song.videoId === info.id);
   if (existing?.reference?.some((frame) => frame.hz)) {
+    dialog.close();
     select(existing);
     showStatus(t("analyzed"), "success");
     return;
   }
+  if (cloudActive) {
+    const code = cloudCode.value.trim();
+    if (!existing?.original && code.length < 24) {
+      dialogStatus.textContent = t("cloudCodeHint");
+      cloudCode.focus();
+      return;
+    }
+    dialog.close();
+    void runTask(async () => {
+      if (existing?.original) return processSong(existing, true);
+      const controller = new AbortController();
+      request = controller;
+      const audio = await fetchCloudAudio(
+        info.id,
+        code,
+        controller.signal,
+        showStatus,
+      );
+      const song = {
+        ...(await createSong(audio, info.title, info)),
+        createdAt: existing?.createdAt ?? Date.now(),
+        history: existing?.history ?? [],
+      };
+      controller.signal.throwIfAborted();
+      await persist(song);
+      controller.signal.throwIfAborted();
+      await processSong(song, true);
+    }, true);
+    return;
+  }
+  dialog.close();
   sendSongToBackground(
     {
       id: `youtube-${info.id}`,
@@ -488,7 +535,7 @@ element("separate").onclick = () => {
   const song = selected;
   if (!song) return;
   if (!song.original) {
-    if (!isLocalApp || !song.videoId) {
+    if ((!isLocalApp && !cloudActive) || !song.videoId) {
       openEnvironment(song.videoId);
       return;
     }

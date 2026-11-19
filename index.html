@@ -324,6 +324,13 @@
         請使用你有權下載和處理的公開影片。
       </p>
       <div id="youtube-preview"></div>
+      <div id="cloud-access" hidden>
+        <label for="cloud-code" data-i18n="cloudCode">雲端試用碼</label>
+        <input id="cloud-code" type="password" autocomplete="off" />
+        <p data-i18n="cloudCodeHint">
+          使用專案管理者提供的試用碼。第一次處理會先喚醒雲端服務。
+        </p>
+      </div>
       <p id="dialog-status" role="status"></p>
       <button id="prepare" class="primary" data-i18n="addAndPrepare" hidden>
         加入並處理歌曲</button
@@ -353,6 +360,15 @@
           連結就能播放、變速，也可以開麥克風看自己的音高。
         </p>
         <button id="setup-add-song" class="primary" data-i18n="startBrowser">
+          加入 YouTube 歌曲
+        </button>
+      </section>
+      <section class="setup-choice" id="setup-cloud" hidden>
+        <h3 data-i18n="cloudMode">雲端取音試用</h3>
+        <p data-i18n="cloudDetails">
+          貼一次 YouTube 連結。雲端取得音訊後，瀏覽器會接著分離人聲、畫音高圖。
+        </p>
+        <button id="setup-cloud-song" class="ghost" data-i18n="startBrowser">
           加入 YouTube 歌曲
         </button>
       </section>

@@ -27,6 +27,12 @@
 
 Mac 啟動器也會檢查 `ffmpeg` 和 `ffprobe` 是否能執行。兩個工具都是 Homebrew 的 `ffmpeg` 套件提供的，看到補裝或修復提示時輸入 `y`。
 
+## Render 免費試用
+
+`render.yaml` 和 `Dockerfile.render` 提供獨立的雲端取音服務。從 Render 網頁用公開 Git 儲存庫建立 **Web Service**，選 Docker、`./Dockerfile.render`、Free 和健康檢查 `/health`。在 Render 的「環境變數」生成 `INTONAVIO_CLOUD_TOKEN`，只把試用碼私下提供給受邀者。也可使用 Blueprint，由 Render 自動生成試用碼。
+
+正式把網址接到網頁前，使用有權處理的短片驗證 Render 能取得音訊。前端建置時設定公開的 `VITE_INTONAVIO_CLOUD_URL` 為該服務 URL，就會顯示雲端試用選項。瀏覽器會等待服務喚醒，再取得 MP3 並分析。試用碼留在當前網頁，歌曲仍由瀏覽器分離與保存。服務每次處理一首，15 分鐘最多接受六次取音，預設只允許本專案的 GitHub Pages 跨站請求。
+
 ## 架構與費用
 
 GitHub Pages 提供 YouTube 串流播放、循環、變速、麥克風音高、音階暖身及本機音檔功能。本機版在 `127.0.0.1:3218` 提供網頁與背景工作，只接受這台電腦的連線。第一次處理時會建立專案專用的 Python 環境，並下載、校驗人聲模型。
