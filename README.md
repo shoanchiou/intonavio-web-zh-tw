@@ -29,6 +29,8 @@ Mac 啟動器也會檢查 `ffmpeg` 和 `ffprobe` 是否能執行。兩個工具�
 
 ## Render 免費試用
 
+在 Render 新加坡免費服務的實測中，服務可啟動且會驗證試用碼。兩支 Blender 公開短片的取音請求都收到 YouTube 的登入驗證要求。正式練唱網頁目前提供本機處理和音檔匯入。
+
 `render.yaml` 和 `Dockerfile.render` 提供獨立的雲端取音服務。從 Render 網頁用公開 Git 儲存庫建立 **Web Service**，選 Docker、`./Dockerfile.render`、Free 和健康檢查 `/health`。在 Render 的「環境變數」生成 `INTONAVIO_CLOUD_TOKEN`，只把試用碼私下提供給受邀者。也可使用 Blueprint，由 Render 自動生成試用碼。
 
 正式把網址接到網頁前，使用有權處理的短片驗證 Render 能取得音訊。前端建置時設定公開的 `VITE_INTONAVIO_CLOUD_URL` 為該服務 URL，就會顯示雲端試用選項。瀏覽器會等待服務喚醒，再取得 MP3 並分析。試用碼留在當前網頁，歌曲仍由瀏覽器分離與保存。服務每次處理一首，15 分鐘最多接受六次取音，預設只允許本專案的 GitHub Pages 跨站請求。
