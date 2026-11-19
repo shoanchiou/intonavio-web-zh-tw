@@ -30,9 +30,35 @@ use_homebrew_downloader() {
   hash -r
 }
 
+use_ffmpeg_directory() {
+  local bin="$1"
+  [[ -x "$bin/ffmpeg" && -x "$bin/ffprobe" ]] || return 1
+  "$bin/ffmpeg" -version >/dev/null 2>&1 || return 1
+  "$bin/ffprobe" -version >/dev/null 2>&1 || return 1
+  export INTONAVIO_FFMPEG_DIR="$bin"
+  export PATH="$bin:$PATH"
+  hash -r
+}
+
+configure_ffmpeg() {
+  local ffmpeg_path prefix
+  unset INTONAVIO_FFMPEG_DIR
+  ffmpeg_path=$(command -v ffmpeg) || ffmpeg_path=""
+  if [[ "$ffmpeg_path" == /* ]] && use_ffmpeg_directory "${ffmpeg_path%/*}"; then
+    return 0
+  fi
+  if command -v brew >/dev/null &&
+    prefix=$(brew --prefix ffmpeg 2>/dev/null) &&
+    use_ffmpeg_directory "$prefix/bin"; then
+    return 0
+  fi
+  ffmpeg -version >/dev/null 2>&1 && ffprobe -version >/dev/null 2>&1
+}
+
 check_dependencies() {
   missing=()
   outdated_downloader=false
+  missing_ffmpeg=false
   if ! command -v node >/dev/null ||
     ! node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit(major > 22 || (major === 22 && minor >= 12) ? 0 : 1)'; then
     missing+=(node)
@@ -44,19 +70,21 @@ check_dependencies() {
       missing+=(yt-dlp)
     fi
   fi
-  for tool in ffmpeg deno; do
-    command -v "$tool" >/dev/null || missing+=("$tool")
-  done
+  configure_ffmpeg || missing_ffmpeg=true
+  command -v deno >/dev/null || missing+=(deno)
   command -v python3.13 >/dev/null || missing+=(python@3.13)
 }
 
 check_dependencies
-if (( ${#missing[@]} )) || "$outdated_downloader"; then
+if (( ${#missing[@]} )) || "$outdated_downloader" || "$missing_ffmpeg"; then
   if (( ${#missing[@]} )); then
     printf '需要安裝或更新：%s\n' "${missing[*]}"
   fi
   if "$outdated_downloader"; then
     printf '%s\n' '這台 Mac 的 YouTube 下載工具（yt-dlp）版本太舊，需要更新才能分離人聲。'
+  fi
+  if "$missing_ffmpeg"; then
+    printf '%s\n' '缺少可用的音訊轉檔工具（ffmpeg 和 ffprobe）。兩者都由 Homebrew 的 ffmpeg 套件提供。'
   fi
   if ! command -v brew >/dev/null; then
     printf '%s\n' '請先依 https://brew.sh/ 的說明安裝 Homebrew，接著重新執行此啟動器。'
@@ -75,6 +103,13 @@ if (( ${#missing[@]} )) || "$outdated_downloader"; then
       missing+=(yt-dlp)
     fi
   fi
+  if "$missing_ffmpeg"; then
+    if [[ -n "$(brew list --versions ffmpeg 2>/dev/null)" ]]; then
+      brew reinstall ffmpeg || printf '%s\n' 'Homebrew 回報修復問題，正在檢查音訊工具是否仍可啟動。'
+    else
+      brew install ffmpeg || printf '%s\n' 'Homebrew 回報安裝問題，正在檢查音訊工具是否仍可啟動。'
+    fi
+  fi
   if (( ${#missing[@]} )); then
     brew install "${missing[@]}"
   fi
@@ -83,6 +118,10 @@ if (( ${#missing[@]} )) || "$outdated_downloader"; then
   if "$outdated_downloader"; then
     printf '仍在使用舊版 yt-dlp：%s\n' "$(command -v yt-dlp)"
     printf '%s\n' '請確認 Homebrew 更新成功，再重新開啟啟動檔。'
+    exit 1
+  fi
+  if "$missing_ffmpeg"; then
+    printf '%s\n' 'ffmpeg 或 ffprobe 仍無法執行。請把上方的安裝訊息提供給 Intonavio 的維護者。'
     exit 1
   fi
   if (( ${#missing[@]} )); then

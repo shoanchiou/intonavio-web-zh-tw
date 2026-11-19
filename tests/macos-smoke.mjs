@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 
@@ -31,6 +35,57 @@ const audio = execFileSync("ffmpeg", [
   "wav",
   "pipe:1",
 ]);
+// Exercise the real yt-dlp postprocessor without depending on YouTube or its IP rules.
+if (process.platform === "darwin") {
+  const fixture = await mkdtemp(join(tmpdir(), "intonavio media test-"));
+  try {
+    const input = join(fixture, "input.wav");
+    await writeFile(input, audio);
+    const ffmpegDirectory = dirname(
+      execFileSync("which", ["ffmpeg"], { encoding: "utf8" }).trim(),
+    );
+    execFileSync(
+      "yt-dlp",
+      [
+        "--ignore-config",
+        "--enable-file-urls",
+        "--ffmpeg-location",
+        ffmpegDirectory,
+        "--extract-audio",
+        "--audio-format",
+        "mp3",
+        "--output",
+        join(fixture, "result.%(ext)s"),
+        "--",
+        pathToFileURL(input).href,
+      ],
+      { timeout: 30000 },
+    );
+    const codec = execFileSync(
+      "ffprobe",
+      [
+        "-v",
+        "error",
+        "-select_streams",
+        "a:0",
+        "-show_entries",
+        "stream=codec_name",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+        join(fixture, "result.mp3"),
+      ],
+      { encoding: "utf8", timeout: 10000 },
+    );
+    assert.equal(codec.trim(), "mp3");
+    assert.ok((await readFile(join(fixture, "result.mp3"))).length > 1000);
+    console.log(
+      "yt-dlp postprocessing: ffmpeg and ffprobe produced a valid MP3.",
+    );
+  } finally {
+    await rm(fixture, { recursive: true, force: true });
+  }
+}
+
 const job = `${origin}/api/jobs/${randomUUID()}`;
 const started = await fetch(job, {
   method: "POST",

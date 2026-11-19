@@ -41,11 +41,13 @@ export async function lookupVideo(id) {
 export async function downloadAudio(id, scratchRoot, signal) {
   await mkdir(scratchRoot, { recursive: true });
   const directory = await mkdtemp(join(scratchRoot, "youtube-"));
+  const ffmpegDirectory = process.env.INTONAVIO_FFMPEG_DIR;
   try {
     await run(
       "yt-dlp",
       [
         ...baseArgs,
+        ...(ffmpegDirectory ? ["--ffmpeg-location", ffmpegDirectory] : []),
         "--format",
         "bestaudio/best",
         "--extract-audio",
@@ -90,6 +92,13 @@ export async function downloadAudio(id, scratchRoot, signal) {
             ? "請關閉舊的終端機視窗，重新開啟新版 Mac 套件的啟動檔。看到更新提示時輸入 y，再重新處理歌曲。"
             : "請在終端機執行 winget upgrade --id yt-dlp.yt-dlp，更新後重新啟動練唱工具再試。";
         throw new Error("YouTube 下載工具（yt-dlp）版本太舊。" + update);
+      }
+      if (/(?:ffmpeg|ffprobe) not found\b/i.test(stderr)) {
+        const repair =
+          process.platform === "darwin"
+            ? "請關閉舊的終端機視窗，重新開啟最新版 Mac 套件的啟動檔。出現安裝或修復提示時輸入 y。"
+            : "請安裝包含 ffprobe 的 FFmpeg，再重新啟動練唱工具。";
+        throw new Error("找不到音訊轉檔工具（ffmpeg 或 ffprobe）。" + repair);
       }
       const detail = stderr
         .split(/\r?\n/)
