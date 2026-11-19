@@ -5,7 +5,7 @@ export default defineConfig({
   build: {
     target: "es2022",
     chunkSizeWarningLimit: 2500,
-    rollupOptions: { input: { main: "index.html", separate: "separate.html" } },
   },
+  worker: { format: "es" },
   optimizeDeps: { exclude: ["web-audio-separation", "onnxruntime-web"] },
 });

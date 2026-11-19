@@ -25,12 +25,15 @@ const zhTW = {
   browserMode: "播 YouTube 跟唱",
   browserDetails:
     "不用安裝。貼上 YouTube 連結就能播放、變速，也可以開麥克風看自己的音高。",
+  browserFileMode: "用自己的音檔做伴奏",
+  browserFileDetails:
+    "不用安裝。匯入音檔後，按「AI 分離人聲與伴奏」。瀏覽器會在你的電腦上分離音軌，並畫出參考音高。",
   startBrowser: "加入 YouTube 歌曲",
-  localMode: "做伴奏、跟原唱比音準",
+  localMode: "用 YouTube 連結做伴奏",
   localDetails:
-    "需要加裝免費的練唱工具。它會把歌曲拆成人聲和伴奏，並在音高圖上標出原唱旋律。",
-  prepareWithSetup: "用練唱工具做伴奏",
-  showSetup: "第一次使用？看下載和啟動步驟",
+    "手邊只有 YouTube 連結時，可以用免費的練唱工具取得音訊，再分離人聲和伴奏。",
+  prepareWithSetup: "用練唱工具處理 YouTube 歌曲",
+  showSetup: "查看練唱工具下載與啟動步驟",
   chooseComputer: "你用哪種電腦？",
   extractSetup: "下載並解壓縮",
   extractWindows: "到「下載」資料夾，在 ZIP 檔上按右鍵，選「全部解壓」。",
@@ -117,7 +120,7 @@ const zhTW = {
   saveScore: "儲存本次成績",
   separate: "AI 分離人聲與伴奏",
   separateHint:
-    "第一次下載約 67 MB 模型；之後在電腦內運算。處理時請保持分頁開啟。",
+    "網頁會在你的電腦上處理音訊。第一次會下載約 67 MB 的模型，速度依電腦與歌曲長度而異。處理時請保持分頁開啟。",
   analyze: "這是清唱，直接分析音高",
   cancel: "取消處理",
   downloadVocals: "下載人聲",
@@ -137,6 +140,8 @@ const zhTW = {
   importing: "正在匯入…",
   imported: "已匯入，可以播放或分離人聲。",
   analyzing: "正在分析參考音高…",
+  decoding: "正在讀取歌曲音訊…",
+  savingAudio: "正在儲存人聲與伴奏…",
   analyzed: "參考旋律已準備好，開啟麥克風跟著唱。",
   download: "下載並驗證模型…",
   "loading-model": "正在啟動分離模型…",
@@ -199,12 +204,15 @@ const en: Record<Key, string> = {
   browserMode: "Sing along to YouTube",
   browserDetails:
     "No installation needed. Add a YouTube link to play the song or change the speed. Turn on the microphone to see your pitch.",
+  browserFileMode: "Make a backing track from an audio file",
+  browserFileDetails:
+    "No installation needed. Import an audio file and select AI vocal / instrumental separation. Your browser splits the tracks and charts the reference pitch on this device.",
   startBrowser: "Add a YouTube song",
-  localMode: "Make a backing track and match the singer’s pitch",
+  localMode: "Make a backing track from a YouTube link",
   localDetails:
-    "The free practice tool splits songs into vocals and a backing track and shows the singer’s notes on your pitch chart.",
-  prepareWithSetup: "Make a backing track with the practice tool",
-  showSetup: "First time? See how to download and start",
+    "If you have a YouTube link, the free practice tool can retrieve the audio and split it into vocals and a backing track.",
+  prepareWithSetup: "Prepare a YouTube song with the practice tool",
+  showSetup: "See how to download and start the practice tool",
   chooseComputer: "Which computer are you using?",
   extractSetup: "Download and extract the ZIP",
   extractWindows:
@@ -296,7 +304,7 @@ const en: Record<Key, string> = {
   saveScore: "Save practice score",
   separate: "AI vocal / instrumental separation",
   separateHint:
-    "First use downloads a ~67 MB model. Processing runs on your computer. Keep this tab open.",
+    "Processing runs on this device. The first run downloads a model (~67 MB). Speed depends on the device and song length. Keep this tab open while processing.",
   analyze: "This is a solo voice: analyze pitch",
   cancel: "Cancel processing",
   downloadVocals: "Download vocals",
@@ -317,6 +325,8 @@ const en: Record<Key, string> = {
   importing: "Importing…",
   imported: "Imported. You can play it or separate the vocals.",
   analyzing: "Analyzing reference pitch…",
+  decoding: "Reading the song’s audio…",
+  savingAudio: "Saving vocals and backing track…",
   analyzed: "Reference ready. Turn on your mic and sing along.",
   download: "Downloading and verifying model…",
   "loading-model": "Starting the separation model…",

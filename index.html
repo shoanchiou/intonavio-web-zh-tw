@@ -247,8 +247,7 @@
             <div>
               <h2 data-i18n="separate">AI 分離人聲與伴奏</h2>
               <p data-i18n="separateHint">
-                第一次下載約 67 MB
-                模型；之後在電腦內運算。處理時請保持分頁開啟。
+                網頁會在你的電腦上處理音訊。第一次會下載約 67 MB 的模型，速度依電腦與歌曲長度而異。處理時請保持分頁開啟。
               </p>
             </div>
             <div class="button-row">
@@ -374,7 +373,7 @@
           data-i18n="prepareWithSetup"
           hidden
         >
-          用練唱工具做伴奏
+          用練唱工具處理 YouTube 歌曲
         </button>
       </dialog>
       <dialog id="environment-dialog" aria-labelledby="environment-title">
@@ -394,6 +393,15 @@
             加入 YouTube 歌曲
           </button>
         </section>
+        <section class="setup-choice" id="setup-import">
+          <h3 data-i18n="browserFileMode">用自己的音檔做伴奏</h3>
+          <p data-i18n="browserFileDetails">
+            不用安裝。匯入音檔後，按「AI 分離人聲與伴奏」。瀏覽器會在你的電腦上分離音軌，並畫出參考音高。
+          </p>
+          <button id="setup-import-file" class="ghost" data-i18n="localFile">
+            匯入本機音檔
+          </button>
+        </section>
         <section class="setup-choice" id="setup-cloud" hidden>
           <h3 data-i18n="cloudMode">雲端取音試用</h3>
           <p data-i18n="cloudDetails">
@@ -405,7 +413,7 @@
           </button>
         </section>
         <section class="setup-choice">
-          <h3 data-i18n="localMode">做伴奏、跟原唱比音準</h3>
+          <h3 data-i18n="localMode">用 YouTube 連結做伴奏</h3>
           <div id="setup-running" hidden>
             <p data-i18n="toolRunning">練唱工具已開啟，可以直接處理歌曲。</p>
             <p data-i18n="prepareSteps">
@@ -415,11 +423,11 @@
           </div>
           <div id="setup-install">
             <p data-i18n="localDetails">
-              需要加裝免費的練唱工具。它會把歌曲拆成人聲和伴奏，並在音高圖上標出原唱旋律。
+              手邊只有 YouTube 連結時，可以用免費的練唱工具取得音訊，再分離人聲和伴奏。
             </p>
             <details id="setup-instructions">
               <summary data-i18n="showSetup">
-                第一次使用？看下載和啟動步驟
+                查看練唱工具下載與啟動步驟
               </summary>
               <fieldset id="setup-computer" class="setup-computer">
                 <legend data-i18n="chooseComputer">你用哪種電腦？</legend>

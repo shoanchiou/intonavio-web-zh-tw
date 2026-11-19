@@ -6,7 +6,7 @@
 
 ## 使用
 
-1. 開啟 GitHub Pages，直接加入 YouTube 影片、播放或開麥克風看音高。如需分離 YouTube 音軌和跟原唱比較，從「練唱方式」下載適用於 Windows 或 macOS 的套件並解壓縮，雙擊該系統的啟動器。保留啟動視窗，瀏覽器會開啟 `http://127.0.0.1:3218/`。
+1. 開啟 GitHub Pages 並使用 Google 帳號登入。可直接加入 YouTube 影片跟唱，也可匯入自己的音檔，在瀏覽器裡做伴奏和分析參考音高。如需從 YouTube 連結取得音訊來做伴奏，在「練唱方式」展開下載步驟，安裝對應的 Windows 或 macOS 練唱工具。保留啟動視窗，瀏覽器會開啟 `http://127.0.0.1:3218/`。
 2. 選「加入歌曲」，貼上你有權下載與處理的公開 YouTube 影片連結，再選「檢查歌曲」與「加入並處理歌曲」。第一次分離會下載並校驗約 67 MB 的模型。
 3. 選擇原曲、人聲或伴奏，開啟麥克風並播放跟唱。可依需求變速、設 A–B 循環與儲存本次成績。建議戴耳機。
 
@@ -29,7 +29,7 @@ Mac 啟動器也會檢查 `ffmpeg` 和 `ffprobe` 是否能執行。兩個工具�
 
 ## Render 免費試用
 
-在 Render 新加坡免費服務的實測中，服務可啟動且會驗證試用碼。兩支 Blender 公開短片的取音請求都收到 YouTube 的登入驗證要求。正式練唱網頁目前提供本機處理和音檔匯入。
+在 Render 新加坡免費服務的實測中，服務可啟動且會驗證試用碼。兩支 Blender 公開短片的取音請求都收到 YouTube 的登入驗證要求。正式練唱網頁的 YouTube 取音使用本機練唱工具，也可直接匯入音檔在瀏覽器裡處理。
 
 `render.yaml` 和 `Dockerfile.render` 提供獨立的雲端取音服務。從 Render 網頁用公開 Git 儲存庫建立 **Web Service**，選 Docker、`./Dockerfile.render`、Free 和健康檢查 `/health`。在 Render 的「環境變數」生成 `INTONAVIO_CLOUD_TOKEN`，只把試用碼私下提供給受邀者。也可使用 Blueprint，由 Render 自動生成試用碼。
 

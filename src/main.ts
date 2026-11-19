@@ -16,7 +16,7 @@ import { element } from "./dom";
 import { locale, setLocale, t } from "./i18n";
 import { formatTime } from "./pitch";
 import { Practice } from "./practice";
-import { SeparationTask } from "./separate";
+import { SeparationTask, type SeparationStage } from "./separate";
 import { deleteSong, listSongs, saveSong } from "./storage";
 import type { Difficulty, Song } from "./types";
 import {
@@ -80,6 +80,7 @@ function setBusy(value: boolean, cancellable = false): void {
     "demo",
     "setup-add-song",
     "setup-cloud-song",
+    "setup-import-file",
   ])
     element<HTMLButtonElement>(id).disabled = value;
   renderLibrary();
@@ -201,23 +202,42 @@ function updateProgress(stage: JobStage, fraction: number): void {
   showStatus(`${t(stage)} ${Math.round(fraction * 100)}%`);
 }
 
+function updateBrowserProgress(
+  stage: SeparationStage | "analyzing",
+  fraction?: number,
+  split = true,
+): void {
+  const part =
+    stage === "download" || stage === "loading-model"
+      ? 1
+      : stage === "analyzing"
+        ? 3
+        : 2;
+  const label = `${split ? `${part}/3 · ` : ""}${t(stage)}`;
+  if (fraction !== undefined && fraction >= 0 && fraction < 1) {
+    progress.value = fraction;
+    showStatus(`${label} ${Math.floor(fraction * 100)}%`);
+  } else {
+    progress.removeAttribute("value");
+    showStatus(label);
+  }
+}
+
 async function processSong(song: Song, split: boolean): Promise<void> {
   const original = song.original;
   if (!original) throw new Error(t("localRequired"));
   if (split) {
-    showStatus(t("download"));
-    const stems = await separation.run(original, (stage, fraction) =>
-      updateProgress(stage as JobStage, fraction),
-    );
+    showStatus(`1/3 · ${t("decoding")}`);
+    const stems = await separation.run(original, updateBrowserProgress);
+    showStatus(`2/3 · ${t("savingAudio")}`);
     song = { ...song, ...stems, reference: undefined };
     await persist(song);
   }
   canCancel = false;
   renderActions();
-  showStatus(t("analyzing"));
-  progress.removeAttribute("value");
+  updateBrowserProgress("analyzing", undefined, split);
   const frames = await analyzeReference(song.vocals ?? original, (fraction) =>
-    updateProgress("analyzing", fraction),
+    updateBrowserProgress("analyzing", fraction, split),
   );
   if (!frames.some((frame) => frame.hz)) throw new Error(t("noPitch"));
   await persist({ ...song, reference: frames });
@@ -355,6 +375,7 @@ setupComputer.onchange = (event) => {
     showSetupFor(event.target.value);
 };
 element("setup-cloud").hidden = !cloudActive;
+element("setup-import").hidden = isLocalApp;
 element("setup-install").hidden = isLocalApp;
 element("setup-running").hidden = !isLocalApp;
 
@@ -363,13 +384,15 @@ function openEnvironment(videoId?: string): void {
   const id = videoId ?? selected?.videoId;
   if (id) url.searchParams.set("v", id);
   element<HTMLAnchorElement>("local-link").href = url.href;
-  setupInstructions.open = Boolean(videoId) && !isLocalApp;
+  setupInstructions.open = false;
   environmentDialog.showModal();
-  if (setupInstructions.open)
-    setupInstructions.querySelector("summary")?.focus();
 }
 element("environment").onclick = () => openEnvironment();
 element("close-environment").onclick = () => environmentDialog.close();
+element("setup-import-file").onclick = () => {
+  environmentDialog.close();
+  fileInput.click();
+};
 element("setup-add-song").onclick = element("setup-cloud-song").onclick =
   () => {
     environmentDialog.close();

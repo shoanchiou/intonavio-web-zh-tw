@@ -1,72 +1,76 @@
+import { decodeAudio } from "./analyze";
+
 export interface SeparationResult {
   vocals: Blob;
   instrumental: Blob;
 }
+
+export type SeparationStage =
+  | "download"
+  | "loading-model"
+  | "demixing"
+  | "writing-output";
+
+export type SeparationUpdate =
+  | SeparationResult
+  | { stage: SeparationStage; fraction: number }
+  | { error: string };
+
 export class SeparationTask {
   private cancelCurrent?: () => void;
+
   run(
     file: Blob,
-    onProgress: (stage: string, fraction: number) => void,
+    onProgress: (stage: SeparationStage, fraction: number) => void,
   ): Promise<SeparationResult> {
     this.cancel();
     return new Promise((resolve, reject) => {
-      const frame = document.createElement("iframe");
-      frame.hidden = true;
-      frame.title = "本機人聲分離運算";
-      frame.src = `${import.meta.env.BASE_URL}separate.html`;
+      const worker = new Worker(
+        new URL("./separation-worker.ts", import.meta.url),
+        { type: "module" },
+      );
       const timeout = setTimeout(
-        () => {
-          cleanup();
-          reject(new Error("處理逾時，請縮短歌曲後重試。"));
-        },
+        () => fail(new Error("處理逾時，請縮短歌曲後重試。")),
         60 * 60 * 1000,
       );
       const cleanup = () => {
-        clearTimeout(timeout);
-        window.removeEventListener("message", receive);
-        frame.remove();
+        if (this.cancelCurrent !== cancel) return false;
         this.cancelCurrent = undefined;
+        clearTimeout(timeout);
+        worker.terminate();
+        return true;
       };
-      const receive = (event: MessageEvent<Record<string, unknown>>) => {
-        if (
-          event.origin !== location.origin ||
-          event.source !== frame.contentWindow
-        )
-          return;
-        if (event.data.ready)
-          frame.contentWindow?.postMessage(
-            { command: "separate", file },
-            location.origin,
-          );
-        if (
-          typeof event.data.stage === "string" &&
-          typeof event.data.fraction === "number"
-        )
-          onProgress(event.data.stage, event.data.fraction);
-        if (typeof event.data.error === "string") {
-          cleanup();
-          reject(new Error(event.data.error));
-        }
-        if (
-          event.data.complete &&
-          event.data.vocals instanceof Blob &&
-          event.data.instrumental instanceof Blob
-        ) {
-          cleanup();
-          resolve({
-            vocals: event.data.vocals,
-            instrumental: event.data.instrumental,
-          });
-        }
+      const fail = (error: unknown) => {
+        if (cleanup()) reject(error);
       };
-      this.cancelCurrent = () => {
-        cleanup();
-        reject(new DOMException("已取消", "AbortError"));
+      const cancel = () => fail(new DOMException("已取消", "AbortError"));
+      this.cancelCurrent = cancel;
+      worker.onmessage = ({ data }: MessageEvent<SeparationUpdate>) => {
+        if (this.cancelCurrent !== cancel) return;
+        if ("stage" in data) onProgress(data.stage, data.fraction);
+        else if ("error" in data) fail(new Error(data.error));
+        else if (cleanup()) resolve(data);
       };
-      window.addEventListener("message", receive);
-      document.body.appendChild(frame);
+      worker.onerror = (event) => {
+        event.preventDefault();
+        fail(new Error(event.message || "無法啟動人聲分離。"));
+      };
+      worker.onmessageerror = () => fail(new Error("無法讀取分離結果。"));
+
+      void decodeAudio(file, 44100)
+        .then((buffer) => {
+          if (this.cancelCurrent !== cancel) return;
+          const left = buffer.getChannelData(0);
+          const right =
+            buffer.numberOfChannels === 1
+              ? new Float32Array(left)
+              : buffer.getChannelData(1);
+          worker.postMessage([left, right], [left.buffer, right.buffer]);
+        })
+        .catch(fail);
     });
   }
+
   cancel(): void {
     this.cancelCurrent?.();
   }
