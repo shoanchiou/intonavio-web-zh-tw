@@ -25,7 +25,7 @@ const zhTW = {
   launchWindows:
     "如果黑色視窗詢問是否安裝，按 Y。裝完關掉視窗，再點兩下同一個檔案。",
   launchMac:
-    "如果「終端機」詢問是否安裝，輸入 y 再按 Return。第一次安裝建議使用 macOS 15 以上。",
+    "如果「終端機」詢問是否安裝或更新，輸入 y 再按 Return。第一次安裝建議使用 macOS 15 以上。",
   homebrewHelp: "如果畫面說找不到 Homebrew，查看安裝說明",
   leaveRunning: "瀏覽器會自動開啟練唱頁。唱歌時請留著剛才開啟的視窗。",
   prepareSetup: "到新開的練唱頁加入歌曲",
@@ -174,7 +174,7 @@ const en: Record<Key, string> = {
   launchWindows:
     "If the command window asks to install, press Y. After installation, close the window and double-click the file again.",
   launchMac:
-    "If Terminal asks to install, type y and press Return. macOS 15 or later is recommended for first-time setup.",
+    "If Terminal asks to install or update, type y and press Return. macOS 15 or later is recommended for first-time setup.",
   homebrewHelp:
     "If Terminal says Homebrew is missing, see the installation guide",
   leaveRunning:

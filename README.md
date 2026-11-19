@@ -23,6 +23,8 @@
 - **Windows**：雙擊 `啟動唱歌音準練習.cmd`。缺少依賴時可透過啟動器選擇使用 Windows 套件管理員安裝。
 - **macOS 14 以上**：支援 Apple Silicon（M 系列）和 Intel。首次透過 Homebrew 安裝建議使用 macOS 15 以上。將套件解壓縮到使用者可寫入的資料夾，雙擊 `啟動唱歌音準練習.command`。缺少依賴時，可讓啟動器透過 [Homebrew](https://brew.sh/) 安裝。第一次使用 Homebrew 請按照官方網站安裝說明；要自行安裝依賴，可執行 `brew install node yt-dlp ffmpeg deno python@3.13`。也可從解壓縮的資料夾在「終端機」執行 `/bin/bash ./啟動唱歌音準練習.command`。Apple Silicon 請使用原生 arm64 的終端機與依賴；Intel 會使用提供 Intel 版套件的 ONNX Runtime 1.23.2。
 
+如果 Mac 版說 YouTube 下載工具 `yt-dlp` 太舊，先在舊的終端機視窗按 Control+C，再下載最新版套件並開啟 `啟動唱歌音準練習.command`。看到更新提示時輸入 `y`，啟動器會透過 Homebrew 更新。
+
 ## 架構與費用
 
 GitHub Pages 提供 YouTube 串流播放、循環、變速、麥克風音高、音階暖身及本機音檔功能。本機版在 `127.0.0.1:3218` 提供網頁與背景工作，只接受這台電腦的連線。第一次處理時會建立專案專用的 Python 環境，並下載、校驗人聲模型。

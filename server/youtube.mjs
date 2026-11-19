@@ -37,7 +37,7 @@ export async function lookupVideo(id) {
   };
 }
 
-// Windows port of workers/stem-splitter/src/youtube.py: best audio → FFmpeg → FULL.mp3.
+// Adapted from workers/stem-splitter/src/youtube.py: best audio → FFmpeg → FULL.mp3.
 export async function downloadAudio(id, scratchRoot, signal) {
   await mkdir(scratchRoot, { recursive: true });
   const directory = await mkdtemp(join(scratchRoot, "youtube-"));
@@ -83,7 +83,15 @@ export async function downloadAudio(id, scratchRoot, signal) {
         "找不到 yt-dlp。請確認 yt-dlp、FFmpeg 與 Deno 已安裝並可從 PATH 執行。",
       );
     if (error?.stderr) {
-      const detail = String(error.stderr)
+      const stderr = String(error.stderr);
+      if (/no such option:\s*--js-runtimes\b/i.test(stderr)) {
+        const update =
+          process.platform === "darwin"
+            ? "請關閉舊的終端機視窗，重新開啟新版 Mac 套件的啟動檔。看到更新提示時輸入 y，再重新處理歌曲。"
+            : "請在終端機執行 winget upgrade --id yt-dlp.yt-dlp，更新後重新啟動練唱工具再試。";
+        throw new Error("YouTube 下載工具（yt-dlp）版本太舊。" + update);
+      }
+      const detail = stderr
         .split(/\r?\n/)
         .filter(Boolean)
         .at(-1)
