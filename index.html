@@ -10,9 +10,9 @@
     <meta name="theme-color" content="#0e0f12" />
     <title>Intonavio｜唱歌音準練習</title>
     <link rel="icon" href="./icon.svg" />
-    <script type="module" crossorigin src="./assets/main-Buz7huMO.js"></script>
+    <script type="module" crossorigin src="./assets/main-DQ6ckjZe.js"></script>
     <link rel="modulepreload" crossorigin href="./assets/modulepreload-polyfill-P2Xu9kJm.js">
-    <link rel="stylesheet" crossorigin href="./assets/main-BCyZI3VK.css">
+    <link rel="stylesheet" crossorigin href="./assets/main-Mydc6e8W.css">
   </head>
   <body>
     <header class="topbar">
@@ -23,7 +23,7 @@
       >
       <div class="top-actions">
         <button id="environment" class="ghost" data-i18n="settings">
-          環境設定</button
+          練唱方式</button
         ><span class="local-pill" data-i18n="local">本機處理・免費使用</span
         ><label class="sr-only" for="language">Language</label
         ><select id="language">
@@ -207,7 +207,7 @@
               <option value="0" selected data-i18n="same">原音域</option>
               <option value="12" data-i18n="higher">高八度</option></select
             ><small data-i18n="octaveHint"
-              >只調整參考線與評分，不改變播放音高。</small
+              >跟唱時如果比原唱低或高一個八度，可在這裡調整參考線。播放維持原音。</small
             ></label
           ><label
             ><span data-i18n="latency">麥克風對齊</span
@@ -269,12 +269,14 @@
         <details class="help">
           <summary data-i18n="help">使用方式</summary>
           <ol>
-            <li data-i18n="step1">1. 匯入歌曲或選擇音階暖身</li>
-            <li data-i18n="step2">2. 歌曲先分離人聲，建立參考旋律</li>
-            <li data-i18n="step3">3. 開啟麥克風，播放並跟唱</li>
+            <li data-i18n="step1">
+              點「加入歌曲」貼上 YouTube 連結，再點「檢查歌曲」。
+            </li>
+            <li data-i18n="step2">選「加入並播放影片」，再按播放。</li>
+            <li data-i18n="step3">開啟麥克風，就能邊唱邊看自己的音高。</li>
           </ol>
           <p data-i18n="limits">
-            支援本機音檔。YouTube 連結匯入、雲端同步與原版參考編輯器尚未提供。
+            想做伴奏或對照原唱音高？到「練唱方式」查看安裝步驟。
           </p>
         </details>
         <footer>
@@ -331,40 +333,135 @@
       ><button id="add-stream" class="ghost" data-i18n="streamOnly" hidden>
         加入並播放影片
       </button>
+      <button
+        id="setup-prepare-song"
+        class="ghost"
+        data-i18n="prepareWithSetup"
+        hidden
+      >
+        用練唱工具做伴奏
+      </button>
     </dialog>
     <dialog id="environment-dialog" aria-labelledby="environment-title">
       <div class="section-heading">
-        <h2 id="environment-title" data-i18n="settings">環境設定</h2>
+        <h2 id="environment-title" data-i18n="settings">練唱方式</h2>
         <button id="close-environment" class="ghost" data-i18n="close">
           關閉
         </button>
       </div>
-      <h3 data-i18n="browserMode">基本版 · 直接使用</h3>
-      <p data-i18n="browserDetails">
-        可播放 YouTube、設定循環和變速，並用麥克風看自己的音高。
-      </p>
-      <h3 data-i18n="localMode">本機背景運算 · 選用</h3>
-      <p data-i18n="localDetails">
-        需要分離 YouTube
-        人聲或跟原唱比音準時，下載對應系統的套件，解壓縮後雙擊「啟動唱歌音準練習」。使用時請保留啟動視窗。
-      </p>
-      <p data-i18n="macDetails">
-        macOS 14 以上適用，支援 Apple Silicon 與
-        Intel。首次啟動時，依終端機提示使用 Homebrew 安裝缺少的依賴。
-      </p>
-      <div class="button-row">
-        <a
-          href="https://shoanchiou.github.io/intonavio-web-zh-tw/Intonavio-Windows.zip"
-          data-i18n="downloadWindows"
-          >下載 Windows 套件</a
-        ><a
-          href="https://shoanchiou.github.io/intonavio-web-zh-tw/Intonavio-macOS.zip"
-          data-i18n="downloadMac"
-          >下載 macOS 套件</a
-        ><a id="local-link" href="http://127.0.0.1:3218/" data-i18n="openLocal"
-          >開啟本機版</a
-        >
-      </div>
+      <section class="setup-choice">
+        <h3 data-i18n="browserMode">播 YouTube 跟唱</h3>
+        <p data-i18n="browserDetails">
+          不用安裝。貼上 YouTube
+          連結就能播放、變速，也可以開麥克風看自己的音高。
+        </p>
+        <button id="setup-add-song" class="primary" data-i18n="startBrowser">
+          加入 YouTube 歌曲
+        </button>
+      </section>
+      <section class="setup-choice">
+        <h3 data-i18n="localMode">做伴奏、跟原唱比音準</h3>
+        <div id="setup-running" hidden>
+          <p data-i18n="toolRunning">練唱工具已開啟，可以直接處理歌曲。</p>
+          <p data-i18n="prepareSteps">
+            點「加入歌曲」貼上 YouTube
+            連結，依序點「檢查歌曲」和「加入並處理歌曲」。處理好後切到「伴奏」，開啟麥克風跟唱。
+          </p>
+        </div>
+        <div id="setup-install">
+          <p data-i18n="localDetails">
+            需要加裝免費的練唱工具。它會把歌曲拆成人聲和伴奏，並在音高圖上標出原唱旋律。
+          </p>
+          <details id="setup-instructions">
+            <summary data-i18n="showSetup">
+              第一次使用？看下載和啟動步驟
+            </summary>
+            <fieldset id="setup-computer" class="setup-computer">
+              <legend data-i18n="chooseComputer">你用哪種電腦？</legend>
+              <label
+                ><input type="radio" name="setup-os" value="windows" checked />
+                Windows</label
+              >
+              <label
+                ><input type="radio" name="setup-os" value="mac" /> Mac</label
+              >
+            </fieldset>
+            <ol class="setup-steps">
+              <li>
+                <strong data-i18n="extractSetup">下載並解壓縮</strong>
+                <div data-setup-os="windows">
+                  <p data-i18n="extractWindows">
+                    到「下載」資料夾，在 ZIP 檔上按右鍵，選「全部解壓」。
+                  </p>
+                  <a
+                    href="https://shoanchiou.github.io/intonavio-web-zh-tw/Intonavio-Windows.zip"
+                    data-i18n="downloadWindows"
+                    >下載 Windows 練唱工具</a
+                  >
+                </div>
+                <div data-setup-os="mac" hidden>
+                  <p data-i18n="extractMac">
+                    到「下載項目」點兩下 ZIP
+                    檔。如果已經看到解壓後的資料夾，直接打開它。
+                  </p>
+                  <a
+                    href="https://shoanchiou.github.io/intonavio-web-zh-tw/Intonavio-macOS.zip"
+                    data-i18n="downloadMac"
+                    >下載 Mac 練唱工具</a
+                  >
+                </div>
+              </li>
+              <li>
+                <strong data-i18n="launchSetup"
+                  >打開新資料夾，點兩下這個檔案</strong
+                >
+                <div data-setup-os="windows">
+                  <code>啟動唱歌音準練習.cmd</code>
+                  <p data-i18n="launchWindows">
+                    如果黑色視窗詢問是否安裝，按
+                    Y。裝完關掉視窗，再點兩下同一個檔案。
+                  </p>
+                </div>
+                <div data-setup-os="mac" hidden>
+                  <code>啟動唱歌音準練習.command</code>
+                  <p data-i18n="launchMac">
+                    如果「終端機」詢問是否安裝，輸入 y 再按
+                    Return。第一次安裝建議使用 macOS 15 以上。
+                  </p>
+                  <a
+                    href="https://brew.sh/"
+                    target="_blank"
+                    rel="noreferrer"
+                    data-i18n="homebrewHelp"
+                    >如果畫面說找不到 Homebrew，查看安裝說明</a
+                  >
+                </div>
+                <p class="setup-note" data-i18n="leaveRunning">
+                  瀏覽器會自動開啟練唱頁。唱歌時請留著剛才開啟的視窗。
+                </p>
+              </li>
+              <li>
+                <strong data-i18n="prepareSetup">到新開的練唱頁加入歌曲</strong>
+                <p data-i18n="prepareSteps">
+                  點「加入歌曲」貼上 YouTube
+                  連結，依序點「檢查歌曲」和「加入並處理歌曲」。處理好後切到「伴奏」，開啟麥克風跟唱。
+                </p>
+              </li>
+            </ol>
+          </details>
+          <p class="setup-reopen">
+            <span data-i18n="alreadyRunning">已經啟動練唱工具？</span>
+            <a
+              id="local-link"
+              href="http://127.0.0.1:3218/"
+              target="_blank"
+              rel="noreferrer"
+              data-i18n="openLocal"
+              >開啟練唱頁</a
+            >
+          </p>
+        </div>
+      </section>
     </dialog>
     <audio id="audio" preload="metadata"></audio>
   </body>
