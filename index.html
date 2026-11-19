@@ -393,6 +393,15 @@
             加入 YouTube 歌曲
           </button>
         </section>
+        <section class="setup-choice" id="setup-cloud" hidden>
+          <h3 data-i18n="cloudMode">用 YouTube 連結做伴奏</h3>
+          <p data-i18n="cloudDetails">
+            不用安裝。雲端取得 YouTube 音訊後，瀏覽器會分離人聲與伴奏，並畫出參考音高。首次取音請輸入試用碼。
+          </p>
+          <button id="setup-cloud-song" class="ghost" data-i18n="startBrowser">
+            加入 YouTube 歌曲
+          </button>
+        </section>
         <section class="setup-choice" id="setup-import">
           <h3 data-i18n="browserFileMode">用自己的音檔做伴奏</h3>
           <p data-i18n="browserFileDetails">
@@ -402,18 +411,8 @@
             匯入本機音檔
           </button>
         </section>
-        <section class="setup-choice" id="setup-cloud" hidden>
-          <h3 data-i18n="cloudMode">雲端取音試用</h3>
-          <p data-i18n="cloudDetails">
-            貼一次 YouTube
-            連結。雲端取得音訊後，瀏覽器會接著分離人聲、畫音高圖。
-          </p>
-          <button id="setup-cloud-song" class="ghost" data-i18n="startBrowser">
-            加入 YouTube 歌曲
-          </button>
-        </section>
         <section class="setup-choice">
-          <h3 data-i18n="localMode">用 YouTube 連結做伴奏</h3>
+          <h3 data-i18n="localMode">Windows／Mac 練唱工具</h3>
           <div id="setup-running" hidden>
             <p data-i18n="toolRunning">練唱工具已開啟，可以直接處理歌曲。</p>
             <p data-i18n="prepareSteps">
@@ -423,7 +422,7 @@
           </div>
           <div id="setup-install">
             <p data-i18n="localDetails">
-              手邊只有 YouTube 連結時，可以用免費的練唱工具取得音訊，再分離人聲和伴奏。
+              網頁取音失敗時，可使用免費的本機練唱工具處理歌曲。
             </p>
             <details id="setup-instructions">
               <summary data-i18n="showSetup">

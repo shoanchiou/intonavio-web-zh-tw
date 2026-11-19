@@ -1,7 +1,13 @@
 /// <reference types="vite/client" />
 import { t } from "./i18n";
 
-export const cloudUrl = (import.meta.env.VITE_INTONAVIO_CLOUD_URL ?? "")
+export const publishedRenderUrl =
+  location.origin === "https://shoanchiou.github.io"
+    ? "https://intonavio-audio.onrender.com"
+    : "";
+export const cloudUrl = (
+  import.meta.env.VITE_INTONAVIO_CLOUD_URL ?? publishedRenderUrl
+)
   .trim()
   .replace(/\/+$/, "");
 

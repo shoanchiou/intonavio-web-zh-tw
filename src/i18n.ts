@@ -4,9 +4,10 @@ const zhTW = {
     "本機服務會在背景分離人聲與分析音高。可關閉分頁，請讓本機服務繼續執行。",
   backgroundWorking: "工作已送往本機服務，重新整理或關閉分頁後仍可回來查看。",
   reconnecting: "與本機服務的連線暫時中斷，正在重連。請確認啟動器視窗仍開啟。",
-  cloudMode: "雲端取音試用",
+  cloudMode: "用 YouTube 連結做伴奏",
   cloudDetails:
-    "貼一次 YouTube 連結。雲端取得音訊後，瀏覽器會接著分離人聲、畫音高圖。",
+    "不用安裝。雲端取得 YouTube 音訊後，瀏覽器會分離人聲與伴奏，並畫出參考音高。首次取音請輸入試用碼。",
+  prepareOnline: "加入並做伴奏",
   cloudCode: "雲端試用碼",
   cloudCodeHint: "使用專案管理者提供的試用碼。第一次處理會先喚醒雲端服務。",
   cloudWaking: "正在喚醒雲端取音服務，可能需要約一分鐘…",
@@ -29,9 +30,9 @@ const zhTW = {
   browserFileDetails:
     "不用安裝。匯入音檔後，按「AI 分離人聲與伴奏」。瀏覽器會在你的電腦上分離音軌，並畫出參考音高。",
   startBrowser: "加入 YouTube 歌曲",
-  localMode: "用 YouTube 連結做伴奏",
+  localMode: "Windows／Mac 練唱工具",
   localDetails:
-    "手邊只有 YouTube 連結時，可以用免費的練唱工具取得音訊，再分離人聲和伴奏。",
+    "網頁取音失敗時，可使用免費的本機練唱工具處理歌曲。",
   prepareWithSetup: "用練唱工具處理 YouTube 歌曲",
   showSetup: "查看練唱工具下載與啟動步驟",
   chooseComputer: "你用哪種電腦？",
@@ -174,9 +175,10 @@ const en: Record<Key, string> = {
     "Job sent. You can refresh or close this tab and return to check its progress.",
   reconnecting:
     "Reconnecting to the local service. Keep the launcher window open.",
-  cloudMode: "Cloud audio trial",
+  cloudMode: "Make a backing track from a YouTube link",
   cloudDetails:
-    "Paste a YouTube link once. The cloud service retrieves the audio and your browser separates vocals and charts pitch.",
+    "No installation needed. The cloud service retrieves the audio, then your browser separates the tracks and charts the reference pitch. Enter an access code on your first retrieval.",
+  prepareOnline: "Add and make a backing track",
   cloudCode: "Cloud access code",
   cloudCodeHint:
     "Use the access code from the project owner. The service may need to wake up on the first request.",
@@ -208,9 +210,9 @@ const en: Record<Key, string> = {
   browserFileDetails:
     "No installation needed. Import an audio file and select AI vocal / instrumental separation. Your browser splits the tracks and charts the reference pitch on this device.",
   startBrowser: "Add a YouTube song",
-  localMode: "Make a backing track from a YouTube link",
+  localMode: "Practice tool for Windows and Mac",
   localDetails:
-    "If you have a YouTube link, the free practice tool can retrieve the audio and split it into vocals and a backing track.",
+    "If the website cannot retrieve the audio, try the free practice tool on your computer.",
   prepareWithSetup: "Prepare a YouTube song with the practice tool",
   showSetup: "See how to download and start the practice tool",
   chooseComputer: "Which computer are you using?",

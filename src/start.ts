@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import "./style.css";
-import { waitForAudioService } from "./cloud";
+import { publishedRenderUrl, waitForAudioService } from "./cloud";
 import { element } from "./dom";
 import { locale, setLocale, t } from "./i18n";
 import { isLocalApp } from "./youtube";
@@ -23,17 +23,13 @@ interface GoogleIdentity {
   disableAutoSelect(): void;
 }
 
-const publishedSite = location.origin === "https://shoanchiou.github.io";
 const clientId = (
   import.meta.env.VITE_INTONAVIO_GOOGLE_CLIENT_ID ??
-  (publishedSite
+  (publishedRenderUrl
     ? "403786780252-gd53230p4hisf9t8bvhc8hv1vn7lqaut.apps.googleusercontent.com"
     : "")
 ).trim();
-const authUrl = (
-  import.meta.env.VITE_INTONAVIO_AUTH_URL ??
-  (publishedSite ? "https://intonavio-audio.onrender.com" : "")
-)
+const authUrl = (import.meta.env.VITE_INTONAVIO_AUTH_URL ?? publishedRenderUrl)
   .trim()
   .replace(/\/+$/, "");
 const sessionKey = "intonavio-google-entry";

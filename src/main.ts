@@ -356,6 +356,7 @@ const environmentDialog = element<HTMLDialogElement>("environment-dialog");
 const setupInstructions = element<HTMLDetailsElement>("setup-instructions");
 const setupPrepare = element<HTMLButtonElement>("setup-prepare-song");
 const setupComputer = element<HTMLFieldSetElement>("setup-computer");
+if (cloudActive) prepareButton.dataset.i18n = "prepareOnline";
 
 function showSetupFor(os: string): void {
   setupComputer
@@ -434,7 +435,7 @@ function renderPreview(info: VideoInfo): void {
     !cloudActive ||
     songs.some((song) => song.videoId === info.id && song.original);
   streamButton.hidden = false;
-  setupPrepare.hidden = isLocalApp;
+  setupPrepare.hidden = isLocalApp || cloudActive;
 }
 element<HTMLFormElement>("youtube-form").onsubmit = async (event) => {
   event.preventDefault();
@@ -488,7 +489,11 @@ prepareButton.onclick = () => {
   const info = video;
   if (!info) return;
   const existing = songs.find((song) => song.videoId === info.id);
-  if (existing?.reference?.some((frame) => frame.hz)) {
+  if (
+    existing?.vocals &&
+    existing.instrumental &&
+    existing.reference?.some((frame) => frame.hz)
+  ) {
     dialog.close();
     select(existing);
     showStatus(t("analyzed"), "success");
@@ -565,6 +570,7 @@ element("separate").onclick = () => {
     element("add-song").click();
     linkInput.value = `https://www.youtube.com/watch?v=${song.videoId}`;
     element<HTMLFormElement>("youtube-form").requestSubmit();
+    if (!cloudAccess.hidden) cloudCode.focus();
     return;
   }
   if (isLocalApp) sendSongToBackground(song, song.original);
