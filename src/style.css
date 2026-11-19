@@ -137,7 +137,7 @@ button[hidden],
   margin-bottom: 10px;
 }
 .topbar {
-  height: 88px;
+  height: 68px;
   border-bottom: 1px solid var(--line);
   display: flex;
   align-items: center;
@@ -184,7 +184,7 @@ button[hidden],
 }
 .sidebar {
   padding: 30px 24px;
-  min-height: calc(100vh - 88px);
+  min-height: calc(100svh - 68px);
   border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
@@ -207,7 +207,7 @@ h2 {
   font-size: 12px;
 }
 main {
-  padding: 38px 40px 20px;
+  padding: 24px 40px 20px;
   min-width: 0;
 }
 .intro {
@@ -225,7 +225,7 @@ main {
 .intro h1 {
   font-size: clamp(22px, 2.2vw, 32px);
   letter-spacing: -0.7px;
-  margin: 0 0 10px;
+  margin: 0 0 6px;
   overflow-wrap: anywhere;
 }
 .intro p.muted {
@@ -246,7 +246,7 @@ main {
   align-items: center;
   color: var(--muted);
   font-size: 11px;
-  margin: 24px 0 12px;
+  margin: 14px 0 10px;
 }
 .status-line span:first-child:before {
   content: "";
@@ -277,20 +277,20 @@ meter {
 .metrics {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  padding: 25px 28px 18px;
+  padding: 14px 28px 10px;
   gap: 22px;
 }
 .metrics > div {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 .metrics span {
   font-size: 11px;
   color: var(--muted);
 }
 .metrics strong {
-  font-size: 36px;
+  font-size: 32px;
   line-height: 1;
   letter-spacing: -1px;
 }
@@ -312,7 +312,7 @@ meter {
   color: #f6c76a;
 }
 .chart-wrap {
-  height: clamp(330px, 48svh, 510px);
+  height: clamp(300px, calc(100svh - 445px), 510px);
   background: #111216;
   margin: 0 14px;
   border-radius: 10px;
@@ -383,7 +383,7 @@ input[type="number"] {
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
-  padding: 6px 22px;
+  padding: 6px 22px 14px;
 }
 .playback-options select,
 .inline-setting {
@@ -396,7 +396,7 @@ input[type="number"] {
   color: #c1c1c8;
 }
 .loop-controls {
-  padding: 8px 22px 18px;
+  margin-left: auto;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -408,7 +408,6 @@ input[type="number"] {
 }
 .loop-controls span {
   font-size: 11px;
-  margin-left: auto;
 }
 .settings-grid {
   display: grid;
@@ -726,7 +725,7 @@ footer a {
     padding-inline: 14px;
   }
   .loop-controls {
-    padding: 8px 14px 16px;
+    margin-left: 0;
   }
   .loop-controls span {
     width: 100%;

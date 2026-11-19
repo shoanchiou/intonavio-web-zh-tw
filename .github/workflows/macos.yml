@@ -6,6 +6,8 @@ on:
       - ".github/workflows/macos.yml"
       - "*.command"
       - "server/**"
+      - "src/**"
+      - "index.html"
       - "scripts/package.py"
       - "tests/macos-smoke.mjs"
       - "package*.json"

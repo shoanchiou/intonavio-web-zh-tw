@@ -30,6 +30,7 @@ export class Practice {
   private points: Point[] = [];
   private live: Detection = { hz: null, rms: 0, confidence: 0 };
   private lastVideoSync = 0;
+  private displayedReference: number | null = null;
   private micStartedAt = 0;
   private isVideoOpen = false;
 
@@ -309,6 +310,11 @@ export class Practice {
       : this.microphone.active
         ? (now - this.micStartedAt) / 1000
         : 0;
+    if (this.playing && !this.microphone.active) {
+      const reference = this.targetAt(clock);
+      if (reference !== this.displayedReference)
+        this.renderReference(reference, null);
+    }
     this.graph.draw(
       clock,
       this.song?.reference ?? [],
@@ -367,6 +373,16 @@ export class Practice {
     const ref = this.targetAt(this.time);
     element("live-note").textContent = hz ? noteName(hzToMidi(hz)) : "—";
     element("live-hz").textContent = hz ? `${hz.toFixed(1)} Hz` : t("noVoice");
+    this.renderReference(ref, hz);
+    element("score").textContent = this.score ? `${this.score.score}%` : "—";
+    element("score-count").textContent = this.count
+      ? `${this.count} ${t("samples")}`
+      : "";
+    element<HTMLButtonElement>("save-score").disabled = !this.score;
+  }
+
+  private renderReference(ref: number | null, hz: number | null): void {
+    this.displayedReference = ref;
     element("target-note").textContent = ref ? noteName(hzToMidi(ref)) : "—";
     element("deviation").textContent =
       ref && hz
@@ -374,10 +390,5 @@ export class Practice {
         : ref
           ? `${ref.toFixed(1)} Hz`
           : t("noTarget");
-    element("score").textContent = this.score ? `${this.score.score}%` : "—";
-    element("score-count").textContent = this.count
-      ? `${this.count} ${t("samples")}`
-      : "";
-    element<HTMLButtonElement>("save-score").disabled = !this.score;
   }
 }
