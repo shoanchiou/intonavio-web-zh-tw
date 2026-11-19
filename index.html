@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="免費唱歌音準練習：即時音高、本機歌曲匯入、瀏覽器 AI 人聲分離。音訊不上傳。"
+    />
+    <meta name="theme-color" content="#0e0f12" />
+    <title>Intonavio｜唱歌音準練習</title>
+    <link rel="icon" href="./icon.svg" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./"
+        ><img src="./icon.svg" width="38" height="38" alt="" /><span
+          >Intonavio <small data-i18n="app">唱歌音準練習</small></span
+        ></a
+      >
+      <div class="top-actions">
+        <button id="environment" class="ghost" data-i18n="settings">
+          環境設定</button
+        ><span class="local-pill" data-i18n="local">本機處理・免費使用</span
+        ><label class="sr-only" for="language">Language</label
+        ><select id="language">
+          <option value="zh-TW">繁體中文</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+    </header>
+    <div class="workspace">
+      <aside class="sidebar">
+        <div class="section-heading">
+          <h2 data-i18n="library">我的練習曲</h2>
+          <span id="song-count">0</span>
+        </div>
+        <button id="add-song" class="primary wide" data-i18n="addSong">
+          ＋ 加入歌曲</button
+        ><button id="import" class="ghost wide" data-i18n="localFile">
+          匯入本機音檔</button
+        ><input
+          type="file"
+          id="file"
+          accept="audio/*,.mp3,.wav,.flac,.m4a,.ogg"
+          hidden
+        /><button id="demo" class="ghost wide" data-i18n="demo">
+          試試音階暖身
+        </button>
+        <div id="library" class="song-list"></div>
+        <div class="privacy">
+          <span class="privacy-dot"></span>
+          <p data-i18n="privacy">音訊只留在這個瀏覽器，不上傳。</p>
+          <small data-i18n="storage"
+            >歌曲儲存在此瀏覽器；清除網站資料會移除歌曲，請下載音檔備份。</small
+          >
+        </div>
+      </aside>
+      <main>
+        <section class="intro">
+          <div>
+            <h1 id="song-title" data-i18n="ready">準備好，唱一小段。</h1>
+            <p id="song-artist" class="muted"></p>
+            <p class="muted" data-i18n="hint">
+              戴上耳機，開啟麥克風，讓你的聲音對齊旋律。
+            </p>
+          </div>
+          <button
+            id="mic"
+            class="primary mic-button"
+            data-i18n="micOn"
+            aria-pressed="false"
+          >
+            開啟麥克風
+          </button>
+        </section>
+        <div class="status-line">
+          <span id="mic-status" data-i18n="micIdle">麥克風未開啟</span
+          ><span class="headphones" data-i18n="headphones">建議使用耳機</span
+          ><meter
+            id="level"
+            min="0"
+            max="0.15"
+            value="0"
+            aria-label="麥克風音量"
+          ></meter>
+        </div>
+        <section class="practice-card">
+          <button
+            id="toggle-video"
+            class="ghost video-toggle"
+            hidden
+            data-i18n="showVideo"
+          >
+            顯示 YouTube 影片
+          </button>
+          <div id="video" class="video" hidden></div>
+          <a
+            id="watch-video"
+            class="video-toggle"
+            hidden
+            target="_blank"
+            rel="noreferrer"
+            data-i18n="openWatch"
+            >在 YouTube 開啟</a
+          >
+          <div class="metrics">
+            <div>
+              <span data-i18n="note">你的音高</span
+              ><strong id="live-note">—</strong
+              ><small id="live-hz" data-i18n="noVoice">等待聲音</small>
+            </div>
+            <div>
+              <span data-i18n="target">參考音高</span
+              ><strong id="target-note">—</strong
+              ><small id="deviation" data-i18n="noTarget">尚無參考旋律</small>
+            </div>
+            <div class="score-metric">
+              <span data-i18n="score">本次準確度</span
+              ><strong id="score">—</strong
+              ><small id="score-count">0 frames</small>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas
+              id="chart"
+              role="img"
+              aria-label="音高走勢圖：參考旋律與你的聲音"
+            ></canvas>
+            <div class="chart-legend">
+              <span
+                ><i class="reference"></i
+                ><span data-i18n="referenceLegend">參考旋律</span></span
+              ><span
+                ><i class="live"></i
+                ><span data-i18n="liveLegend">你的聲音</span></span
+              >
+            </div>
+          </div>
+          <div class="transport">
+            <button id="play" class="play" disabled data-i18n="play">
+              播放</button
+            ><label class="sr-only" for="seek" data-i18n="progress"
+              >播放進度</label
+            ><input
+              id="seek"
+              type="range"
+              min="0"
+              max="1"
+              value="0"
+              step="0.01"
+              disabled
+            /><span id="time">0:00 / 0:00</span
+            ><label class="sr-only" for="track">音軌</label
+            ><select id="track">
+              <option value="original" data-i18n="original">原曲</option>
+              <option value="vocals" data-i18n="vocals" disabled>人聲</option>
+              <option value="instrumental" data-i18n="instrumental" disabled>
+                伴奏
+              </option>
+            </select>
+          </div>
+          <div class="loop-controls">
+            <button id="a" class="ghost" data-i18n="markerA" disabled>
+              設 A 起點</button
+            ><button id="b" class="ghost" data-i18n="markerB" disabled>
+              設 B 終點</button
+            ><button
+              id="clear-loop"
+              class="ghost"
+              data-i18n="clearLoop"
+              disabled
+            >
+              取消循環</button
+            ><span id="loop-info" class="muted">A — · B —</span>
+          </div>
+        </section>
+        <section class="settings-grid">
+          <label
+            ><span data-i18n="speed">播放速度</span
+            ><select id="speed">
+              <option value="0.5">0.5×</option>
+              <option value="0.75">0.75×</option>
+              <option value="1" selected>1.0×</option>
+              <option value="1.25">1.25×</option>
+              <option value="1.5">1.5×</option>
+            </select></label
+          ><label
+            ><span data-i18n="difficulty">評分難度</span
+            ><select id="difficulty">
+              <option value="beginner" data-i18n="beginner">入門</option>
+              <option value="intermediate" data-i18n="intermediate">
+                進階
+              </option>
+              <option value="advanced" data-i18n="advanced">挑戰</option>
+            </select></label
+          ><label
+            ><span data-i18n="octave">練習音域</span
+            ><select id="octave">
+              <option value="-12" data-i18n="lower">低八度</option>
+              <option value="0" selected data-i18n="same">原音域</option>
+              <option value="12" data-i18n="higher">高八度</option></select
+            ><small data-i18n="octaveHint"
+              >只調整參考線與評分，不改變播放音高。</small
+            ></label
+          ><label
+            ><span data-i18n="latency">麥克風對齊</span
+            ><input
+              id="latency"
+              type="number"
+              min="-500"
+              max="500"
+              step="10"
+              value="0"
+            /><small data-i18n="latencyHint"
+              >數值為毫秒；依耳機延遲調整。</small
+            ></label
+          >
+        </section>
+        <section class="processing-card">
+          <div>
+            <h2 data-i18n="separate">AI 分離人聲與伴奏</h2>
+            <p data-i18n="separateHint">
+              第一次下載約 67 MB 模型；之後在電腦內運算。處理時請保持分頁開啟。
+            </p>
+          </div>
+          <div class="button-row">
+            <button id="separate" class="primary" disabled data-i18n="separate">
+              AI 分離人聲與伴奏</button
+            ><button id="analyze" class="ghost" disabled data-i18n="analyze">
+              這是清唱，直接分析音高</button
+            ><button id="cancel" class="ghost" hidden data-i18n="cancel">
+              取消處理
+            </button>
+          </div>
+          <progress
+            id="processing-progress"
+            max="1"
+            value="0"
+            hidden
+          ></progress>
+          <p id="status" role="status" aria-live="polite"></p>
+          <div class="button-row" id="downloads"></div>
+        </section>
+        <section class="history-card">
+          <div class="section-heading">
+            <h2 data-i18n="history">練習紀錄</h2>
+            <button
+              id="save-score"
+              class="ghost"
+              data-i18n="saveScore"
+              disabled
+            >
+              儲存本次成績
+            </button>
+          </div>
+          <div id="history">
+            <p class="muted" data-i18n="noHistory">
+              唱完後，儲存一次練習成績。
+            </p>
+          </div>
+        </section>
+        <details class="help">
+          <summary data-i18n="help">使用方式</summary>
+          <ol>
+            <li data-i18n="step1">1. 匯入歌曲或選擇音階暖身</li>
+            <li data-i18n="step2">2. 歌曲先分離人聲，建立參考旋律</li>
+            <li data-i18n="step3">3. 開啟麥克風，播放並跟唱</li>
+          </ol>
+          <p data-i18n="limits">
+            支援本機音檔。YouTube 連結匯入、雲端同步與原版參考編輯器尚未提供。
+          </p>
+        </details>
+        <footer>
+          Intonavio Web ·
+          <a
+            href="https://github.com/pawelgawliczek/intonavio"
+            target="_blank"
+            rel="noreferrer"
+            >Intonavio / MIT</a
+          >
+          ·
+          <a
+            href="https://github.com/incidentist/web-audio-separation"
+            target="_blank"
+            rel="noreferrer"
+            >web-audio-separation</a
+          >
+        </footer>
+      </main>
+    </div>
+    <dialog id="add-dialog" aria-labelledby="add-dialog-title">
+      <div class="section-heading">
+        <h2 id="add-dialog-title" data-i18n="pasteUrl">貼上 YouTube 連結</h2>
+        <button id="close-dialog" class="ghost" data-i18n="close">關閉</button>
+      </div>
+      <form id="youtube-form">
+        <label for="youtube-url" class="sr-only" data-i18n="pasteUrl"
+          >貼上 YouTube 連結</label
+        ><input
+          id="youtube-url"
+          type="url"
+          required
+          placeholder="https://www.youtube.com/watch?v=…"
+          autocomplete="off"
+        /><button type="submit" class="ghost" data-i18n="checkSong">
+          檢查歌曲
+        </button>
+      </form>
+      <p class="muted" data-i18n="youtubeHint">
+        請使用你有權下載和處理的公開影片。
+      </p>
+      <div id="youtube-preview"></div>
+      <p id="dialog-status" role="status"></p>
+      <button id="prepare" class="primary" data-i18n="addAndPrepare" hidden>
+        加入並處理歌曲</button
+      ><button id="add-stream" class="ghost" data-i18n="streamOnly" hidden>
+        加入並播放影片
+      </button>
+    </dialog>
+    <dialog id="environment-dialog" aria-labelledby="environment-title">
+      <div class="section-heading">
+        <h2 id="environment-title" data-i18n="settings">環境設定</h2>
+        <button id="close-environment" class="ghost" data-i18n="close">
+          關閉
+        </button>
+      </div>
+      <h3 data-i18n="browserMode">基本版 · 直接使用</h3>
+      <p data-i18n="browserDetails">
+        可播放 YouTube、設定循環和變速，並用麥克風看自己的音高。
+      </p>
+      <h3 data-i18n="localMode">Windows 本機版 · 選用</h3>
+      <p data-i18n="localDetails">
+        需要分離 YouTube
+        人聲或跟原唱比音準時，下載、解壓縮並雙擊「啟動唱歌音準練習」。使用時保留啟動視窗。
+      </p>
+      <div class="button-row">
+        <a
+          href="https://shoanchiou.github.io/intonavio-web-zh-tw/Intonavio-Windows.zip"
+          data-i18n="downloadWindows"
+          >下載 Windows 套件</a
+        ><a id="local-link" href="http://127.0.0.1:3218/" data-i18n="openLocal"
+          >開啟 Windows 本機版</a
+        >
+      </div>
+    </dialog>
+    <audio id="audio" preload="metadata"></audio>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

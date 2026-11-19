@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.runtime/
+.env*
+*.log
+test-results/
+*.wav
+*.mp3
+*.onnx
