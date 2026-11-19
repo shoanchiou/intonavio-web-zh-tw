@@ -1,4 +1,9 @@
 const zhTW = {
+  "setup-engine": "正在準備本機運算環境…",
+  backgroundHint:
+    "Windows 本機服務會在背景分離人聲與分析音高。可關閉分頁，請讓本機服務繼續執行。",
+  backgroundWorking: "工作已送往本機服務，重新整理或關閉分頁後仍可回來查看。",
+  reconnecting: "與本機服務的連線暫時中斷，正在重連。請確認啟動器視窗仍開啟。",
   settings: "環境設定",
   browserMode: "基本版 · 直接使用",
   browserDetails: "可播放 YouTube、設定循環和變速，並用麥克風看自己的音高。",
@@ -116,6 +121,13 @@ const zhTW = {
 };
 type Key = keyof typeof zhTW;
 const en: Record<Key, string> = {
+  "setup-engine": "Preparing the local processing environment…",
+  backgroundHint:
+    "The Windows service separates vocals and analyzes pitch in the background. You can close this tab while the local service is running.",
+  backgroundWorking:
+    "Job sent. You can refresh or close this tab and return to check its progress.",
+  reconnecting:
+    "Reconnecting to the local service. Keep the launcher window open.",
   settings: "Environment setup",
   browserMode: "Basic · ready to use",
   browserDetails:

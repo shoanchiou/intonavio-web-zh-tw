@@ -2,12 +2,12 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { downloadAudio, lookupVideo } from "./youtube.mjs";
+import { lookupVideo } from "./youtube.mjs";
+import { handleJob } from "./jobs.mjs";
 
 const appRoot = fileURLToPath(new URL("../", import.meta.url));
 const dist = resolve(appRoot, "dist");
-const scratch = resolve(appRoot, ".runtime");
-const port = 3218;
+const port = Number(process.env.INTONAVIO_TEST_PORT || 3218);
 const host = `127.0.0.1:${port}`;
 const origin = `http://${host}`;
 const videoId = /^[a-zA-Z0-9_-]{11}$/;
@@ -19,7 +19,6 @@ const contentTypes = {
   ".wasm": "application/wasm",
   ".svg": "image/svg+xml",
 };
-let isDownloading = false;
 
 function json(res, status, data) {
   res.writeHead(status, {
@@ -29,55 +28,32 @@ function json(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
-async function handleApi(req, res, path) {
+async function handleApi(req, res, path, url) {
   if (
     req.headers["sec-fetch-site"] === "cross-site" ||
     req.headers["sec-fetch-site"] === "same-site"
   )
     return json(res, 403, { error: "請在本機 Intonavio 網頁操作。" });
   if (req.method === "GET" && path === "/api/health")
-    return json(res, 200, { service: "intonavio-local" });
-  const match = /^\/api\/youtube\/(metadata|audio)\/([^/]+)$/.exec(path);
-  if (!match || !videoId.test(match[2]))
+    return json(res, 200, { service: "intonavio-local", backgroundJobs: true });
+  if (path.startsWith("/api/jobs/"))
+    return handleJob(req, res, url, origin, json);
+  const match = /^\/api\/youtube\/metadata\/([^/]+)$/.exec(path);
+  if (!match || !videoId.test(match[1]))
     return json(res, 400, { error: "YouTube 影片 ID 格式不正確。" });
-  const [, operation, id] = match;
-  if (operation === "metadata" && req.method === "GET")
-    return json(res, 200, await lookupVideo(id));
-  if (
-    operation !== "audio" ||
-    req.method !== "POST" ||
-    req.headers.origin !== origin ||
-    req.headers["x-intonavio-action"] !== "import"
-  )
-    return json(res, 403, { error: "請在本機 Intonavio 網頁操作。" });
-  if (isDownloading)
-    return json(res, 409, { error: "已有影片正在下載，請等待完成。" });
-  const controller = new AbortController();
-  res.once("close", () => {
-    if (!res.writableEnded) controller.abort();
-  });
-  isDownloading = true;
-  try {
-    const audio = await downloadAudio(id, scratch, controller.signal);
-    if (res.destroyed) return;
-    res.writeHead(200, {
-      "Content-Type": "audio/mpeg",
-      "Content-Length": audio.length,
-      "Cache-Control": "no-store",
-    });
-    res.end(audio);
-  } finally {
-    isDownloading = false;
-  }
+  if (req.method !== "GET")
+    return json(res, 405, { error: "不支援這個方法。" });
+  return json(res, 200, await lookupVideo(match[1]));
 }
 
 const server = createServer(async (req, res) => {
   try {
     if (req.headers.host !== host)
       return json(res, 403, { error: "僅限本機位址。" });
-    const path = decodeURIComponent(new URL(req.url, origin).pathname);
+    const url = new URL(req.url, origin);
+    const path = decodeURIComponent(url.pathname);
     res.setHeader("X-Content-Type-Options", "nosniff");
-    if (path.startsWith("/api/")) return await handleApi(req, res, path);
+    if (path.startsWith("/api/")) return await handleApi(req, res, path, url);
     if (req.method !== "GET" && req.method !== "HEAD")
       return json(res, 405, { error: "不支援這個方法。" });
     const file = resolve(dist, `.${path === "/" ? "/index.html" : path}`);

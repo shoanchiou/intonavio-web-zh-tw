@@ -1,5 +1,15 @@
 import "./style.css";
 import { analyzeReference, decodeAudio } from "./analyze";
+import {
+  cancelJob,
+  JobError,
+  rememberJob,
+  restoreJob,
+  submitJob,
+  watchJob,
+  type JobStage,
+  type PendingJob,
+} from "./background";
 import { makeDemo } from "./demo";
 import { element } from "./dom";
 import { locale, setLocale, t } from "./i18n";
@@ -10,7 +20,6 @@ import { deleteSong, listSongs, saveSong } from "./storage";
 import type { Difficulty, Song } from "./types";
 import {
   extractVideoId,
-  importVideo,
   isLocalApp,
   previewVideo,
   WINDOWS_URL,
@@ -32,6 +41,7 @@ let video: VideoInfo | undefined;
 let busy = false;
 let canCancel = false;
 let request: AbortController | undefined;
+let backgroundJob: PendingJob | undefined;
 let previewRequest: AbortController | undefined;
 let downloadUrls: string[] = [];
 
@@ -154,7 +164,7 @@ function renderActions(): void {
       const url = URL.createObjectURL(song[kind]);
       downloadUrls.push(url);
       link.href = url;
-      link.download = `${song.title}-${t(kind)}.wav`;
+      link.download = `${song.title}-${t(kind)}.${song[kind].type.includes("mpeg") ? "mp3" : "wav"}`;
       link.textContent = t(label);
       links.append(link);
     }
@@ -178,13 +188,7 @@ function renderActions(): void {
   }
 }
 
-type ProgressText =
-  | "download"
-  | "loading-model"
-  | "demixing"
-  | "writing-output"
-  | "analyzing";
-function updateProgress(stage: ProgressText, fraction: number): void {
+function updateProgress(stage: JobStage, fraction: number): void {
   progress.value = fraction;
   showStatus(`${t(stage)} ${Math.round(fraction * 100)}%`);
 }
@@ -195,7 +199,7 @@ async function processSong(song: Song, split: boolean): Promise<void> {
   if (split) {
     showStatus(t("download"));
     const stems = await separation.run(original, (stage, fraction) =>
-      updateProgress(stage as ProgressText, fraction),
+      updateProgress(stage as JobStage, fraction),
     );
     song = { ...song, ...stems, reference: undefined };
     await persist(song);
@@ -249,6 +253,70 @@ async function runTask(
     request = undefined;
     setBusy(false);
   }
+}
+
+function runBackground(job: PendingJob, start: boolean, audio?: Blob): void {
+  void runTask(async () => {
+    const controller = new AbortController();
+    request = controller;
+    backgroundJob = job;
+    if (start) rememberJob(job);
+    try {
+      showStatus(t("backgroundWorking"));
+      if (start) {
+        try {
+          await submitJob(job, audio, controller.signal);
+        } catch (error) {
+          if (error instanceof JobError || controller.signal.aborted)
+            throw error;
+          // The server may have accepted the request just before the browser lost it.
+        }
+      }
+      const result = await watchJob(
+        job,
+        controller.signal,
+        updateProgress,
+        () => showStatus(t("reconnecting")),
+      );
+      const existing = songs.find((song) => song.id === job.songId);
+      await persist({
+        ...existing,
+        ...result,
+        id: job.songId,
+        title: job.title,
+        videoId: job.videoId,
+        artist: job.artist,
+        createdAt: existing?.createdAt ?? Date.now(),
+        history: existing?.history ?? [],
+      });
+      rememberJob();
+      showStatus(
+        result.reference.some((frame) => frame.hz)
+          ? t("separated")
+          : t("noPitch"),
+        "success",
+      );
+    } catch (error) {
+      if (error instanceof JobError) rememberJob();
+      throw error;
+    } finally {
+      backgroundJob = undefined;
+    }
+  }, true);
+}
+
+function sendSongToBackground(
+  song: { id: string; title: string; artist?: string; videoId?: string },
+  source?: Blob,
+): void {
+  const pending = {
+    id: crypto.randomUUID(),
+    songId: song.id,
+    title: song.title,
+    artist: song.artist,
+    videoId: song.videoId,
+  };
+  runBackground(pending, true, source);
 }
 
 const dialogStatus = element("dialog-status");
@@ -348,24 +416,15 @@ prepareButton.onclick = () => {
     showStatus(t("analyzed"), "success");
     return;
   }
-  void runTask(async () => {
-    if (existing?.original) {
-      select(existing);
-      await processSong(existing, !existing.vocals);
-      return;
-    }
-    const controller = new AbortController();
-    request = controller;
-    showStatus(t("fetching"));
-    const song = await createSong(
-      await importVideo(info.id, controller.signal),
-      info.title,
-      info,
-    );
-    controller.signal.throwIfAborted();
-    await persist(song);
-    await processSong(song, true);
-  }, true);
+  sendSongToBackground(
+    {
+      id: `youtube-${info.id}`,
+      title: info.title,
+      artist: info.artist,
+      videoId: info.id,
+    },
+    existing?.original,
+  );
 };
 
 element("import").onclick = () => fileInput.click();
@@ -399,13 +458,25 @@ element("separate").onclick = () => {
     element<HTMLFormElement>("youtube-form").requestSubmit();
     return;
   }
-  void runTask(() => processSong(song, true), true);
+  if (isLocalApp) sendSongToBackground(song, song.original);
+  else void runTask(() => processSong(song, true), true);
 };
 element("analyze").onclick = () => {
   const song = selected;
   if (song) void runTask(() => processSong(song, false));
 };
 element("cancel").onclick = () => {
+  if (backgroundJob) {
+    const job = backgroundJob;
+    void cancelJob(job)
+      .then(() => {
+        if (backgroundJob?.id !== job.id) return;
+        rememberJob();
+        request?.abort();
+      })
+      .catch(showError);
+    return;
+  }
   request?.abort();
   separation.cancel();
 };
@@ -418,6 +489,10 @@ element("save-score").onclick = () => {
       .catch(showError);
 };
 const selector = element<HTMLSelectElement>("language");
+if (isLocalApp)
+  document
+    .querySelector<HTMLElement>('[data-i18n="separateHint"]')
+    ?.setAttribute("data-i18n", "backgroundHint");
 selector.value = locale;
 selector.onchange = () => {
   setLocale(selector.value === "en" ? "en" : "zh-TW");
@@ -433,6 +508,11 @@ void listSongs()
     if (!busy && !songs.length) {
       songs = items;
       select(songs[0]);
+    }
+    const pending = isLocalApp ? restoreJob() : undefined;
+    if (pending && !busy) {
+      if (dialog.open) dialog.close();
+      runBackground(pending, false);
     }
   })
   .catch(() => showStatus(t("restoreError"), "error"));
