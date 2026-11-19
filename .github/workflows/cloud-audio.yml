@@ -31,4 +31,4 @@ jobs:
           docker run --rm intonavio-audio ffprobe -version
           name="$(docker run -d -p 127.0.0.1:10000:10000 -e INTONAVIO_CLOUD_TOKEN=isolated-ci-test-token-without-service-access intonavio-audio)"
           trap 'docker logs "$name"; docker rm -f "$name"' EXIT
-          curl --fail --retry 12 --retry-connrefused --retry-delay 1 http://127.0.0.1:10000/health | grep intonavio-cloud-audio
+          curl --fail --retry 12 --retry-all-errors --retry-delay 1 --max-time 5 http://127.0.0.1:10000/health | grep intonavio-cloud-audio
