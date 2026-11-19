@@ -39,7 +39,7 @@ Mac 啟動器也會檢查 `ffmpeg` 和 `ffprobe` 是否能執行。兩個工具�
 
 設定 Render 環境變數 `INTONAVIO_GOOGLE_CLIENT_ID`，重建服務後可驗證 Google 登入。前端用相同的 Web 用戶端 ID 建置 `VITE_INTONAVIO_GOOGLE_CLIENT_ID`，並以 `VITE_INTONAVIO_AUTH_URL` 指定驗證服務。Google Cloud 的核准 JavaScript 來源是 `https://shoanchiou.github.io`。
 
-Google 登入用來進入練唱網頁，曲庫仍儲存在目前瀏覽器。Windows 和 Mac 套件留在本機使用流程。雲端取音沿用各自的試用設定。
+正式 GitHub Pages 已設定 Google 登入。登入後曲庫仍儲存在目前瀏覽器，跨裝置同步需要另外部署持久化資料庫。Windows 和 Mac 套件留在本機使用流程。雲端取音沿用各自的試用設定。
 
 ## 架構與費用
 
