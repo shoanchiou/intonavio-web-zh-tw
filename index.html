@@ -354,13 +354,6 @@
           請使用你有權下載和處理的公開影片。
         </p>
         <div id="youtube-preview"></div>
-        <div id="cloud-access" hidden>
-          <label for="cloud-code" data-i18n="cloudCode">雲端試用碼</label>
-          <input id="cloud-code" type="password" autocomplete="off" />
-          <p data-i18n="cloudCodeHint">
-            使用專案管理者提供的試用碼。第一次處理會先喚醒雲端服務。
-          </p>
-        </div>
         <p id="dialog-status" role="status"></p>
         <button id="prepare" class="primary" data-i18n="addAndPrepare" hidden>
           加入並處理歌曲</button
@@ -375,6 +368,24 @@
         >
           用練唱工具處理 YouTube 歌曲
         </button>
+      </dialog>
+      <dialog
+        id="cloud-error-dialog"
+        role="alertdialog"
+        aria-labelledby="cloud-error-title"
+        aria-describedby="cloud-error-message"
+      >
+        <div class="section-heading">
+          <h2 id="cloud-error-title" data-i18n="cloudErrorTitle">
+            無法取得 YouTube 音訊
+          </h2>
+          <button id="close-cloud-error" class="ghost" data-i18n="close">
+            關閉
+          </button>
+        </div>
+        <p id="cloud-error-message" data-i18n="cloudErrorMessage">
+          請聯絡開發者檢查 Render 取音服務，必要時更新 Cookie。
+        </p>
       </dialog>
       <dialog id="environment-dialog" aria-labelledby="environment-title">
         <div class="section-heading">
@@ -396,7 +407,7 @@
         <section class="setup-choice" id="setup-cloud" hidden>
           <h3 data-i18n="cloudMode">用 YouTube 連結做伴奏</h3>
           <p data-i18n="cloudDetails">
-            不用安裝。雲端取得 YouTube 音訊後，瀏覽器會分離人聲與伴奏，並畫出參考音高。首次取音請輸入試用碼。
+            不用安裝。雲端取得 YouTube 音訊後，瀏覽器會分離人聲與伴奏，並畫出參考音高。
           </p>
           <button id="setup-cloud-song" class="ghost" data-i18n="startBrowser">
             加入 YouTube 歌曲

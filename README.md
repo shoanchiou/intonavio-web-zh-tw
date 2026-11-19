@@ -7,7 +7,7 @@
 ## 使用
 
 1. 開啟 GitHub Pages 並使用 Google 帳號登入，選「加入歌曲」，貼上你有權下載與處理的公開 YouTube 影片連結，再選「檢查歌曲」。
-2. 輸入雲端試用碼，選「加入並做伴奏」。Render 取得音訊後，瀏覽器會分離人聲與伴奏並分析參考音高。第一次分離會下載並校驗約 67 MB 的模型，處理時請保持分頁開啟。只想跟唱時可選「加入並播放影片」。
+2. 選「加入並做伴奏」。Render 取得音訊後，瀏覽器會分離人聲與伴奏並分析參考音高。第一次分離會下載並校驗約 67 MB 的模型，處理時請保持分頁開啟。只想跟唱時可選「加入並播放影片」。
 3. 選擇原曲、人聲或伴奏，開啟麥克風並播放跟唱。可依需求變速、設 A–B 循環與儲存本次成績。建議戴耳機。
 
 音高圖每次顯示 18 個半音。旋律在中央區域時保持刻度固定，持續往上或往下走才平滑移動。播放、音軌、速度和 A–B 循環都在圖下方。
@@ -27,13 +27,13 @@
 
 Mac 啟動器也會檢查 `ffmpeg` 和 `ffprobe` 是否能執行。兩個工具都是 Homebrew 的 `ffmpeg` 套件提供的，看到補裝或修復提示時輸入 `y`。
 
-## Render 免費試用
+## Render 雲端取音
 
 正式 GitHub Pages 使用 `https://intonavio-audio.onrender.com` 取得 YouTube 音訊。YouTube 可能對部分取音請求要求驗證。遇到取音失敗可試另一支有權處理的影片，或匯入音檔。
 
-`render.yaml` 和 `Dockerfile.render` 提供獨立的雲端取音服務。從 Render 網頁用公開 Git 儲存庫建立 **Web Service**，選 Docker、`./Dockerfile.render`、Free 和健康檢查 `/health`。在 Render 的「環境變數」生成 `INTONAVIO_CLOUD_TOKEN`，只把試用碼私下提供給受邀者。也可使用 Blueprint，由 Render 自動生成試用碼。
+`render.yaml` 和 `Dockerfile.render` 提供雲端取音服務。從 Render 網頁用公開 Git 儲存庫建立 **Web Service**，選 Docker、`./Dockerfile.render`、Free 和健康檢查 `/health`，或使用 Blueprint 建立。取音沿用下節的 Google 登入設定。
 
-其他部署可用前端建置變數 `VITE_INTONAVIO_CLOUD_URL` 指定取音網址。瀏覽器會等待服務喚醒，再請 Render 驗證試用碼與取得 MP3。分離、音高分析和歌曲保存都在瀏覽器完成。服務每次處理一首，15 分鐘最多接受六次取音，預設只允許本專案的 GitHub Pages 跨站請求。
+其他部署可用前端建置變數 `VITE_INTONAVIO_CLOUD_URL` 指定取音網址。瀏覽器會等待服務喚醒，再請 Render 驗證現有的 Google 登入並取得 MP3。分離、音高分析和歌曲保存都在瀏覽器完成。服務每次處理一首，15 分鐘最多接受六次取音，預設只允許本專案的 GitHub Pages 跨站請求。
 
 ## Google 登入
 

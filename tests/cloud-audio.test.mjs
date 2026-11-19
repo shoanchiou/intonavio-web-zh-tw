@@ -3,14 +3,12 @@ import { once } from "node:events";
 import test from "node:test";
 import { createAudioServer } from "../server/cloud-audio.mjs";
 
-test("the cloud server warms up publicly and accepts audio requests only with a code", async (context) => {
-  const token = "local-test-code-without-production-access";
+test("the cloud server warms up publicly and accepts audio requests with a verified Google session", async (context) => {
   const origin = "https://practice.example";
-  const headers = { Origin: origin, Authorization: "Bearer " + token };
+  const headers = { Origin: origin, Authorization: "Bearer verified.google.token" };
   const started = Promise.withResolvers();
   const finish = Promise.withResolvers();
   const server = createAudioServer({
-    token,
     origin,
     verifyGoogle: async (credential) => credential === "verified.google.token",
     async fetchAudio(id, _scratch, _signal, options) {
@@ -39,7 +37,7 @@ test("the cloud server warms up publicly and accepts audio requests only with a 
       method: "POST",
       headers: { Origin: origin, Authorization: "Bearer " + credential },
     });
-  assert.equal((await signIn(token)).status, 401);
+  assert.equal((await signIn("not-a-google-token")).status, 401);
   assert.equal((await signIn("fake.google.token")).status, 401);
   const signedIn = await signIn("verified.google.token");
   assert.equal(signedIn.status, 200);
@@ -50,7 +48,7 @@ test("the cloud server warms up publicly and accepts audio requests only with a 
         method: "POST",
         headers: {
           Origin: origin,
-          Authorization: "Bearer verified.google.token",
+          Authorization: "Bearer fake.google.token",
         },
       })
     ).status,

@@ -6,17 +6,17 @@ const zhTW = {
   reconnecting: "與本機服務的連線暫時中斷，正在重連。請確認啟動器視窗仍開啟。",
   cloudMode: "用 YouTube 連結做伴奏",
   cloudDetails:
-    "不用安裝。雲端取得 YouTube 音訊後，瀏覽器會分離人聲與伴奏，並畫出參考音高。首次取音請輸入試用碼。",
+    "不用安裝。雲端取得 YouTube 音訊後，瀏覽器會分離人聲與伴奏，並畫出參考音高。",
   prepareOnline: "加入並做伴奏",
-  cloudCode: "雲端試用碼",
-  cloudCodeHint: "使用專案管理者提供的試用碼。第一次處理會先喚醒雲端服務。",
   cloudWaking: "正在喚醒雲端取音服務，可能需要約一分鐘…",
   cloudFetching: "雲端正在取得 YouTube 音訊…",
   cloudWakeTimeout: "雲端服務未能啟動。請稍後重試，或匯入音檔。",
   cloudConnection: "與雲端服務的連線中斷。請重試，或匯入音檔。",
-  cloudWrongCode: "雲端試用碼不正確，請重新輸入。",
-  cloudBusy: "雲端試用服務忙碌或已達用量限制，請稍後再試。",
+  cloudSignInRequired: "請重新整理網頁並用 Google 登入，再處理歌曲。",
+  cloudBusy: "雲端取音服務忙碌或已達用量限制，請稍後再試。",
   cloudNoAudio: "雲端服務未能取得這首歌的音訊。請試另一首歌，或匯入音檔。",
+  cloudErrorTitle: "無法取得 YouTube 音訊",
+  cloudErrorMessage: "請聯絡開發者檢查 Render 取音服務，必要時更新 Cookie。",
   googleEnter: "使用 Google 帳號登入，開始唱歌音準練習。",
   googleSignOut: "登出",
   googleChecking: "正在確認 Google 登入。若服務剛啟動，可能需要約一分鐘。",
@@ -177,11 +177,8 @@ const en: Record<Key, string> = {
     "Reconnecting to the local service. Keep the launcher window open.",
   cloudMode: "Make a backing track from a YouTube link",
   cloudDetails:
-    "No installation needed. The cloud service retrieves the audio, then your browser separates the tracks and charts the reference pitch. Enter an access code on your first retrieval.",
+    "No installation needed. The cloud service retrieves the audio, then your browser separates the tracks and charts the reference pitch.",
   prepareOnline: "Add and make a backing track",
-  cloudCode: "Cloud access code",
-  cloudCodeHint:
-    "Use the access code from the project owner. The service may need to wake up on the first request.",
   cloudWaking:
     "Starting the cloud audio service. This may take about a minute…",
   cloudFetching: "Retrieving YouTube audio in the cloud…",
@@ -189,11 +186,14 @@ const en: Record<Key, string> = {
     "The cloud audio service did not start. Try again later or import an audio file.",
   cloudConnection:
     "The cloud connection ended. Try again or import an audio file.",
-  cloudWrongCode: "The cloud access code is incorrect. Enter it again.",
+  cloudSignInRequired: "Reload the page and sign in with Google before preparing a song.",
   cloudBusy:
     "The cloud service is busy or has reached its usage limit. Try again later.",
   cloudNoAudio:
     "The cloud service could not retrieve this song. Try another song or import an audio file.",
+  cloudErrorTitle: "Could not retrieve YouTube audio",
+  cloudErrorMessage:
+    "Contact the developer to check audio retrieval on Render and refresh its cookies if needed.",
   googleEnter: "Sign in with Google to start singing practice.",
   googleSignOut: "Sign out",
   googleChecking:

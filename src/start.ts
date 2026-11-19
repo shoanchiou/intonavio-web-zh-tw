@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import "./style.css";
-import { publishedRenderUrl, waitForAudioService } from "./cloud";
+import { googleSessionKey, publishedRenderUrl, waitForAudioService } from "./cloud";
 import { element } from "./dom";
 import { locale, setLocale, t } from "./i18n";
 import { isLocalApp } from "./youtube";
@@ -32,7 +32,6 @@ const clientId = (
 const authUrl = (import.meta.env.VITE_INTONAVIO_AUTH_URL ?? publishedRenderUrl)
   .trim()
   .replace(/\/+$/, "");
-const sessionKey = "intonavio-google-entry";
 const gate = element("google-entry");
 const app = element("practice-app");
 const signOut = element<HTMLButtonElement>("google-sign-out");
@@ -93,14 +92,14 @@ async function start(): Promise<void> {
   }
 
   signOut.onclick = () => {
-    sessionStorage.removeItem(sessionKey);
+    sessionStorage.removeItem(googleSessionKey);
     location.reload();
   };
-  const remembered = sessionStorage.getItem(sessionKey);
+  const remembered = sessionStorage.getItem(googleSessionKey);
   if (remembered) {
     try {
       if (await verify(authUrl, remembered)) return openPractice(true);
-      sessionStorage.removeItem(sessionKey);
+      sessionStorage.removeItem(googleSessionKey);
     } catch {
       status.textContent = t("googleUnavailable");
     }
@@ -116,10 +115,10 @@ async function start(): Promise<void> {
       busy = true;
       try {
         if (await verify(authUrl, credential)) {
-          sessionStorage.setItem(sessionKey, credential);
+          sessionStorage.setItem(googleSessionKey, credential);
           signOut.onclick = () => {
             identity.disableAutoSelect();
-            sessionStorage.removeItem(sessionKey);
+            sessionStorage.removeItem(googleSessionKey);
             location.reload();
           };
           await openPractice(true);
