@@ -72,7 +72,7 @@ function setBusy(value: boolean, cancellable = false): void {
   canCancel = value && cancellable;
   progress.hidden = !value;
   if (value) progress.removeAttribute("value");
-  for (const id of ["add-song", "import", "demo"])
+  for (const id of ["add-song", "import", "demo", "setup-add-song"])
     element<HTMLButtonElement>(id).disabled = value;
   renderLibrary();
   renderActions();
@@ -323,15 +323,52 @@ const dialogStatus = element("dialog-status");
 const prepareButton = element<HTMLButtonElement>("prepare");
 const streamButton = element<HTMLButtonElement>("add-stream");
 const environmentDialog = element<HTMLDialogElement>("environment-dialog");
-function openEnvironment(): void {
+const setupInstructions = element<HTMLDetailsElement>("setup-instructions");
+const setupPrepare = element<HTMLButtonElement>("setup-prepare-song");
+const setupComputer = element<HTMLFieldSetElement>("setup-computer");
+
+function showSetupFor(os: string): void {
+  setupComputer
+    .querySelectorAll<HTMLInputElement>("input")
+    .forEach((option) => {
+      option.checked = option.value === os;
+    });
+  setupInstructions
+    .querySelectorAll<HTMLElement>("[data-setup-os]")
+    .forEach((section) => {
+      section.hidden = section.dataset.setupOs !== os;
+    });
+}
+showSetupFor(navigator.userAgent.includes("Macintosh") ? "mac" : "windows");
+setupComputer.onchange = (event) => {
+  if (event.target instanceof HTMLInputElement)
+    showSetupFor(event.target.value);
+};
+element("setup-install").hidden = isLocalApp;
+element("setup-running").hidden = !isLocalApp;
+
+function openEnvironment(videoId?: string): void {
   const url = new URL(LOCAL_URL);
-  const id = selected?.videoId;
+  const id = videoId ?? selected?.videoId;
   if (id) url.searchParams.set("v", id);
   element<HTMLAnchorElement>("local-link").href = url.href;
+  setupInstructions.open = Boolean(videoId) && !isLocalApp;
   environmentDialog.showModal();
+  if (setupInstructions.open)
+    setupInstructions.querySelector("summary")?.focus();
 }
-element("environment").onclick = openEnvironment;
+element("environment").onclick = () => openEnvironment();
 element("close-environment").onclick = () => environmentDialog.close();
+element("setup-add-song").onclick = () => {
+  environmentDialog.close();
+  element("add-song").click();
+};
+setupPrepare.onclick = () => {
+  if (!video) return;
+  const id = video.id;
+  dialog.close();
+  openEnvironment(id);
+};
 function resetPreview(): void {
   previewRequest?.abort();
   previewRequest = undefined;
@@ -340,6 +377,7 @@ function resetPreview(): void {
   dialogStatus.textContent = "";
   prepareButton.hidden = true;
   streamButton.hidden = true;
+  setupPrepare.hidden = true;
 }
 element("add-song").onclick = () => {
   resetPreview();
@@ -357,6 +395,7 @@ function renderPreview(info: VideoInfo): void {
   dialogStatus.textContent = "";
   prepareButton.hidden = !isLocalApp;
   streamButton.hidden = false;
+  setupPrepare.hidden = isLocalApp;
 }
 element<HTMLFormElement>("youtube-form").onsubmit = async (event) => {
   event.preventDefault();
@@ -450,7 +489,7 @@ element("separate").onclick = () => {
   if (!song) return;
   if (!song.original) {
     if (!isLocalApp || !song.videoId) {
-      openEnvironment();
+      openEnvironment(song.videoId);
       return;
     }
     element("add-song").click();

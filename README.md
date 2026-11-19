@@ -6,7 +6,7 @@
 
 ## 使用
 
-1. 開啟 GitHub Pages，直接加入 YouTube 影片、播放或開麥克風看音高。如需分離 YouTube 音軌和跟原唱比較，從「環境設定」下載適用於 Windows 或 macOS 的套件並解壓縮，雙擊該系統的啟動器。保留啟動視窗，瀏覽器會開啟 `http://127.0.0.1:3218/`。
+1. 開啟 GitHub Pages，直接加入 YouTube 影片、播放或開麥克風看音高。如需分離 YouTube 音軌和跟原唱比較，從「練唱方式」下載適用於 Windows 或 macOS 的套件並解壓縮，雙擊該系統的啟動器。保留啟動視窗，瀏覽器會開啟 `http://127.0.0.1:3218/`。
 2. 選「加入歌曲」，貼上你有權下載與處理的公開 YouTube 影片連結，再選「檢查歌曲」與「加入並處理歌曲」。第一次分離會下載並校驗約 67 MB 的模型。
 3. 選擇原曲、人聲或伴奏，開啟麥克風並播放跟唱。可依需求變速、設 A–B 循環與儲存本次成績。建議戴耳機。
 
@@ -21,7 +21,7 @@
 需要 Node.js 22.12 以上、yt-dlp、FFmpeg、Deno 和 Python 3.13。
 
 - **Windows**：雙擊 `啟動唱歌音準練習.cmd`。缺少依賴時可透過啟動器選擇使用 Windows 套件管理員安裝。
-- **macOS 14 以上**：支援 Apple Silicon（M 系列）和 Intel。將套件解壓縮到使用者可寫入的資料夾，雙擊 `啟動唱歌音準練習.command`。缺少依賴時，可讓啟動器透過 [Homebrew](https://brew.sh/) 安裝。第一次使用 Homebrew 請按照官方網站安裝說明；要自行安裝依賴，可執行 `brew install node yt-dlp ffmpeg deno python@3.13`。也可從解壓縮的資料夾在「終端機」執行 `/bin/bash ./啟動唱歌音準練習.command`。Apple Silicon 請使用原生 arm64 的終端機與依賴；Intel 會使用提供 Intel 版套件的 ONNX Runtime 1.23.2。
+- **macOS 14 以上**：支援 Apple Silicon（M 系列）和 Intel。首次透過 Homebrew 安裝建議使用 macOS 15 以上。將套件解壓縮到使用者可寫入的資料夾，雙擊 `啟動唱歌音準練習.command`。缺少依賴時，可讓啟動器透過 [Homebrew](https://brew.sh/) 安裝。第一次使用 Homebrew 請按照官方網站安裝說明；要自行安裝依賴，可執行 `brew install node yt-dlp ffmpeg deno python@3.13`。也可從解壓縮的資料夾在「終端機」執行 `/bin/bash ./啟動唱歌音準練習.command`。Apple Silicon 請使用原生 arm64 的終端機與依賴；Intel 會使用提供 Intel 版套件的 ONNX Runtime 1.23.2。
 
 ## 架構與費用
 

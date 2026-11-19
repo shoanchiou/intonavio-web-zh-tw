@@ -60,6 +60,107 @@ dialog p {
   font-size: 13px;
   line-height: 1.6;
 }
+#environment-dialog {
+  width: min(620px, calc(100% - 28px));
+  max-height: calc(100dvh - 32px);
+  padding: clamp(14px, 4vw, 24px);
+}
+.setup-choice {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid #393b46;
+  border-radius: 12px;
+  background: #17181e;
+}
+.setup-choice h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+.setup-choice p {
+  margin: 5px 0 12px;
+  color: #d4d4dc;
+}
+.setup-choice a {
+  color: #e9b3f2;
+  text-underline-offset: 3px;
+}
+.setup-choice button {
+  font-size: 13px;
+}
+#setup-instructions > summary {
+  padding: 9px 11px;
+  border: 1px solid #484451;
+  border-radius: 8px;
+  background: #26232d;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.setup-computer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 8px;
+  padding: 0;
+  border: 0;
+}
+.setup-computer legend {
+  padding: 0 0 6px;
+  font-size: 13px;
+}
+.setup-computer label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 1px solid #454553;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.setup-computer input {
+  flex: none;
+  margin: 0;
+  accent-color: #da8ee8;
+}
+.setup-steps {
+  margin: 12px 0 6px;
+  padding-inline-start: 24px;
+  font-size: 13px;
+}
+.setup-steps li + li {
+  margin-top: 14px;
+}
+.setup-steps li::marker {
+  color: #e9b3f2;
+  font-weight: 700;
+}
+.setup-steps a {
+  display: inline-block;
+  padding-block: 4px;
+  line-height: 1.5;
+}
+.setup-steps code {
+  display: inline-block;
+  max-width: 100%;
+  padding: 3px 7px;
+  margin-top: 6px;
+  background: #2a2934;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+.setup-choice .setup-note {
+  margin-top: 8px;
+}
+.setup-choice .setup-reopen {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 6px;
+  margin: 12px 0 0;
+}
+#setup-prepare-song {
+  margin-top: 8px;
+}
 #youtube-preview img {
   max-width: 180px;
   border-radius: 8px;
