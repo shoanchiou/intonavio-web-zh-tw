@@ -12,7 +12,7 @@ export async function analyzeReference(
   blob: Blob,
   onProgress: (fraction: number) => void,
 ): Promise<PitchFrame[]> {
-  const buffer = await decodeAudio(blob);
+  const buffer = await decodeAudio(blob, 16000);
   const samples = new Float32Array(buffer.length);
   for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
     const data = buffer.getChannelData(channel);
@@ -21,7 +21,7 @@ export async function analyzeReference(
   }
   return new Promise((resolve, reject) => {
     const worker = new Worker(
-      `${import.meta.env.BASE_URL}worklets/reference-worker.js`,
+      new URL("./reference-worker.ts", import.meta.url),
       { type: "module" },
     );
     const timeout = setTimeout(() => {
@@ -53,8 +53,6 @@ export async function analyzeReference(
       finish();
       reject(new Error(event.message || "無法啟動音高分析。"));
     };
-    worker.postMessage({ samples, sampleRate: buffer.sampleRate }, [
-      samples.buffer,
-    ]);
+    worker.postMessage(samples, [samples.buffer]);
   });
 }

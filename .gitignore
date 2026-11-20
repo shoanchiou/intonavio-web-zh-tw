@@ -7,4 +7,5 @@ test-results/
 *.wav
 *.mp3
 *.onnx
+!src/models/swift-f0.onnx
 cookies.txt

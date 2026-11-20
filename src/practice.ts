@@ -2,27 +2,35 @@ import { element } from "./dom";
 import { t } from "./i18n";
 import { Microphone } from "./microphone";
 import {
+  buildReferenceNotes,
   centsBetween,
   formatTime,
-  frameAt,
   frameScore,
   hzToMidi,
   noteName,
+  referenceNoteAt,
+  type ReferenceNote,
 } from "./pitch";
 import { PianoRoll, type Point } from "./roll";
 import { VideoPlayer } from "./video-player";
 import type { Detection, Difficulty, Song, Track } from "./types";
+
+type MicMode = "practice" | "test";
+const micGainKey = "intonavio-mic-gain";
 
 export class Practice {
   private audio = element<HTMLAudioElement>("audio");
   private seek = element<HTMLInputElement>("seek");
   private track = element<HTMLSelectElement>("track");
   private micButton = element<HTMLButtonElement>("mic");
+  private micTestButton = element<HTMLButtonElement>("mic-test");
+  private micGain = element<HTMLInputElement>("mic-gain");
   private graph = new PianoRoll(element("chart"));
   private microphone = new Microphone();
   private video = new VideoPlayer(element("video"));
   private url?: string;
   private song?: Song;
+  private reference: ReferenceNote[] = [];
   private markerA?: number;
   private markerB?: number;
   private total = 0;
@@ -32,6 +40,9 @@ export class Practice {
   private lastVideoSync = 0;
   private displayedReference: number | null = null;
   private micStartedAt = 0;
+  private micMode: MicMode = "practice";
+  private inputPeakUntil = 0;
+  private gainPeakUntil = 0;
   private isVideoOpen = false;
 
   constructor(private notify: (message: string, kind?: string) => void) {
@@ -63,6 +74,7 @@ export class Practice {
       this.graph.resetViewport();
       this.reset();
       this.syncVideo(true);
+      this.render();
     };
     this.track.onchange = () => this.playTrack(this.track.value as Track, true);
     element<HTMLSelectElement>("speed").onchange = () => {
@@ -86,14 +98,31 @@ export class Practice {
       this.reset();
       this.render();
     };
-    this.micButton.onclick = () => void this.toggleMic();
+    this.micButton.onclick = () => void this.toggleMic("practice");
+    this.micTestButton.onclick = () => void this.toggleMic("test");
+    const savedGain = localStorage.getItem(micGainKey);
+    if (savedGain && Number.isFinite(Number(savedGain)))
+      this.micGain.value = savedGain;
+    this.updateMicGain();
+    this.micGain.oninput = () => this.updateMicGain();
+    this.micGain.onchange = () =>
+      localStorage.setItem(micGainKey, this.micGain.value);
+    const micSettings = element<HTMLDetailsElement>("mic-settings");
+    micSettings.ontoggle = () => {
+      if (!micSettings.open && this.micMode === "test") {
+        this.stopMic();
+        this.render();
+      }
+    };
     element("toggle-video").onclick = () => void this.toggleVideo();
-    window.addEventListener("pagehide", () => this.microphone.stop());
+    window.addEventListener("pagehide", () => this.stopMic());
     requestAnimationFrame(this.tick);
   }
 
   select(song?: Song): void {
     const sameSong = this.song?.id === song?.id;
+    if (song?.reference !== this.song?.reference)
+      this.reference = buildReferenceNotes(song?.reference ?? []);
     this.song = song;
     if (sameSong && this.url) {
       this.render();
@@ -217,7 +246,7 @@ export class Practice {
     return Number(element<HTMLSelectElement>("octave").value);
   }
   private targetAt(time: number): number | null {
-    const hz = frameAt(this.song?.reference ?? [], time)?.hz;
+    const hz = referenceNoteAt(this.reference, time)?.hz;
     return hz ? hz * 2 ** (this.transpose / 12) : null;
   }
   get score() {
@@ -232,23 +261,46 @@ export class Practice {
       : null;
   }
 
-  private async toggleMic(): Promise<void> {
-    if (this.microphone.active) {
-      this.microphone.stop();
-      this.live = { hz: null, confidence: 0, rms: 0 };
+  private get practiceMic(): boolean {
+    return this.microphone.active && this.micMode === "practice";
+  }
+
+  private stopMic(): void {
+    this.microphone.stop();
+    this.live = { hz: null, confidence: 0, rms: 0 };
+    this.inputPeakUntil = this.gainPeakUntil = 0;
+  }
+
+  private updateMicGain(): void {
+    this.microphone.setGain(this.micGain.valueAsNumber / 100);
+    element<HTMLOutputElement>("mic-gain-value").value = this.micGain.value + "%";
+    this.gainPeakUntil = 0;
+    this.renderMicControls();
+  }
+
+  private async toggleMic(mode: MicMode): Promise<void> {
+    if (this.microphone.active && this.micMode === mode) {
+      this.stopMic();
       this.render();
       return;
     }
-    this.micButton.disabled = true;
-    element("mic-status").textContent = t("micPending");
-    try {
+    this.micMode = mode;
+    if (mode === "practice") {
       if (!this.song) this.points = [];
       this.micStartedAt = performance.now();
+    }
+    if (this.microphone.active) {
+      this.render();
+      return;
+    }
+    this.micButton.disabled = this.micTestButton.disabled = true;
+    this.renderMicControls();
+    try {
       await this.microphone.start((detection) => this.onDetection(detection));
     } catch {
       this.notify(t("micDenied"), "error");
     } finally {
-      this.micButton.disabled = false;
+      this.micButton.disabled = this.micTestButton.disabled = false;
       this.render();
     }
   }
@@ -256,8 +308,16 @@ export class Practice {
   private onDetection(detection: Detection): void {
     this.live = detection;
     if (detection.error) {
+      this.stopMic();
       this.notify(detection.error, "error");
       this.render();
+      return;
+    }
+    const until = performance.now() + 1200;
+    if ((detection.inputPeak ?? 0) >= 0.99) this.inputPeakUntil = until;
+    if ((detection.peak ?? 0) >= 0.99) this.gainPeakUntil = until;
+    if (this.micMode === "test") {
+      this.renderMicControls();
       return;
     }
     const hz = detection.confidence >= 0.85 ? detection.hz : null;
@@ -307,22 +367,22 @@ export class Practice {
     if (this.playing) this.renderTransport();
     const clock = this.song
       ? this.time
-      : this.microphone.active
+      : this.practiceMic
         ? (now - this.micStartedAt) / 1000
         : 0;
-    if (this.playing && !this.microphone.active) {
+    if (this.playing && !this.practiceMic) {
       const reference = this.targetAt(clock);
       if (reference !== this.displayedReference)
         this.renderReference(reference, null);
     }
     this.graph.draw(
       clock,
-      this.song?.reference ?? [],
+      this.reference,
       this.points,
       this.transpose,
       now,
-      !this.song?.reference?.length &&
-        this.microphone.active &&
+      !this.reference.length &&
+        this.practiceMic &&
         (!this.song || this.playing),
     );
     requestAnimationFrame(this.tick);
@@ -362,14 +422,43 @@ export class Practice {
       : t("showVideo");
     this.renderPitch();
   }
-  private renderPitch(): void {
+  private renderMicControls(): void {
     const active = this.microphone.active;
-    this.micButton.textContent = t(active ? "micOff" : "micOn");
-    this.micButton.setAttribute("aria-pressed", String(active));
-    if (!this.micButton.disabled)
-      element("mic-status").textContent = t(active ? "micLive" : "micIdle");
-    element<HTMLMeterElement>("level").value = this.live.rms;
-    const hz = active && this.live.confidence >= 0.85 ? this.live.hz : null;
+    const testing = active && this.micMode === "test";
+    this.micButton.textContent = t(this.practiceMic ? "micOff" : "micOn");
+    this.micButton.setAttribute("aria-pressed", String(this.practiceMic));
+    this.micTestButton.textContent = t(testing ? "micTestStop" : "micTestStart");
+    const now = performance.now();
+    const warning =
+      active && now < this.inputPeakUntil
+        ? t("micInputWarning")
+        : active && now < this.gainPeakUntil
+          ? t("micGainWarning")
+          : "";
+    const status = this.micButton.disabled
+      ? "micPending"
+      : warning
+        ? "micPeaking"
+        : testing
+          ? "micTesting"
+          : active
+            ? "micLive"
+            : "micIdle";
+    element("mic-status").textContent = t(status);
+    const line = element("mic-status-line");
+    line.classList.toggle("live", active);
+    line.classList.toggle("peaking", Boolean(warning));
+    const meter = element<HTMLMeterElement>("level");
+    meter.value = active ? Math.min(1, this.live.peak ?? 0) : 0;
+    meter.setAttribute("aria-label", t("micPeak"));
+    const detail = element("mic-warning");
+    if (detail.textContent !== warning) detail.textContent = warning;
+    detail.hidden = !warning;
+  }
+
+  private renderPitch(): void {
+    this.renderMicControls();
+    const hz = this.practiceMic && this.live.confidence >= 0.85 ? this.live.hz : null;
     const ref = this.targetAt(this.time);
     element("live-note").textContent = hz ? noteName(hzToMidi(hz)) : "—";
     element("live-hz").textContent = hz ? `${hz.toFixed(1)} Hz` : t("noVoice");

@@ -400,12 +400,53 @@ main {
   background: #70e2b2;
   box-shadow: 0 0 10px #70e2b266;
 }
+.status-line.peaking span:first-child:before {
+  background: #fb927e;
+  box-shadow: none;
+}
 .headphones {
   margin-left: auto;
 }
 meter {
   width: 80px;
   height: 9px;
+}
+.mic-settings {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 13px;
+}
+.mic-settings summary {
+  cursor: pointer;
+}
+.mic-settings-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+}
+.mic-gain-control {
+  flex: 1 1 180px;
+  max-width: 320px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 6px 10px;
+}
+.mic-gain-control input {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+.mic-gain-control output {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.mic-warning {
+  margin: 8px 0 0;
+  color: #ffac99;
 }
 .practice-card {
   background: #17181e;
@@ -481,7 +522,11 @@ canvas {
   display: inline-block;
 }
 .reference {
-  background: #d946ef;
+  background: #a58af2;
+}
+.chart-legend i.reference {
+  height: 6px;
+  border-radius: 3px;
 }
 .live {
   background: #fbbf24;
