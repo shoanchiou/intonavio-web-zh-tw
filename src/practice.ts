@@ -17,6 +17,7 @@ import type { Detection, Difficulty, Song, Track } from "./types";
 
 type MicMode = "practice" | "test";
 const micGainKey = "intonavio-mic-gain";
+const micAutoGainKey = "intonavio-mic-auto-gain";
 
 export class Practice {
   private audio = element<HTMLAudioElement>("audio");
@@ -25,6 +26,7 @@ export class Practice {
   private micButton = element<HTMLButtonElement>("mic");
   private micTestButton = element<HTMLButtonElement>("mic-test");
   private micGain = element<HTMLInputElement>("mic-gain");
+  private micAutoGain = element<HTMLInputElement>("mic-auto-gain");
   private graph = new PianoRoll(element("chart"));
   private microphone = new Microphone();
   private video = new VideoPlayer(element("video"));
@@ -71,7 +73,6 @@ export class Practice {
     };
     this.seek.oninput = () => {
       this.seekTo(Number(this.seek.value));
-      this.graph.resetViewport();
       this.reset();
       this.syncVideo(true);
       this.render();
@@ -83,8 +84,9 @@ export class Practice {
     };
     element("difficulty").onchange = () => this.reset();
     element("octave").onchange = () => {
-      this.graph.resetViewport();
+      this.graph.setPitchRange(this.reference, this.transpose);
       this.reset();
+      this.render();
     };
     element("a").onclick = () => {
       this.markerA = this.time;
@@ -103,10 +105,18 @@ export class Practice {
     const savedGain = localStorage.getItem(micGainKey);
     if (savedGain && Number.isFinite(Number(savedGain)))
       this.micGain.value = savedGain;
+    this.micAutoGain.checked = localStorage.getItem(micAutoGainKey) === "true";
+    this.microphone.setAutomaticGain(this.micAutoGain.checked);
     this.updateMicGain();
     this.micGain.oninput = () => this.updateMicGain();
     this.micGain.onchange = () =>
       localStorage.setItem(micGainKey, this.micGain.value);
+    this.micAutoGain.onchange = () => {
+      this.microphone.setAutomaticGain(this.micAutoGain.checked);
+      localStorage.setItem(micAutoGainKey, String(this.micAutoGain.checked));
+      this.gainPeakUntil = 0;
+      this.renderMicControls();
+    };
     const micSettings = element<HTMLDetailsElement>("mic-settings");
     micSettings.ontoggle = () => {
       if (!micSettings.open && this.micMode === "test") {
@@ -121,8 +131,10 @@ export class Practice {
 
   select(song?: Song): void {
     const sameSong = this.song?.id === song?.id;
-    if (song?.reference !== this.song?.reference)
+    if (song?.reference !== this.song?.reference) {
       this.reference = buildReferenceNotes(song?.reference ?? []);
+      this.graph.setPitchRange(this.reference, this.transpose);
+    }
     this.song = song;
     if (sameSong && this.url) {
       this.render();
@@ -132,7 +144,6 @@ export class Practice {
     this.isVideoOpen = false;
     this.markerA = this.markerB = undefined;
     this.track.value = "original";
-    this.graph.resetViewport();
     this.playTrack("original");
     this.reset();
     this.render();
@@ -273,7 +284,6 @@ export class Practice {
 
   private updateMicGain(): void {
     this.microphone.setGain(this.micGain.valueAsNumber / 100);
-    element<HTMLOutputElement>("mic-gain-value").value = this.micGain.value + "%";
     this.gainPeakUntil = 0;
     this.renderMicControls();
   }
@@ -375,16 +385,7 @@ export class Practice {
       if (reference !== this.displayedReference)
         this.renderReference(reference, null);
     }
-    this.graph.draw(
-      clock,
-      this.reference,
-      this.points,
-      this.transpose,
-      now,
-      !this.reference.length &&
-        this.practiceMic &&
-        (!this.song || this.playing),
-    );
+    this.graph.draw(clock, this.reference, this.points, this.transpose);
     requestAnimationFrame(this.tick);
   };
 
@@ -425,6 +426,9 @@ export class Practice {
   private renderMicControls(): void {
     const active = this.microphone.active;
     const testing = active && this.micMode === "test";
+    this.micGain.disabled = this.micAutoGain.checked;
+    element<HTMLOutputElement>("mic-gain-value").value =
+      `${Math.round(this.microphone.currentGain * 100)}%`;
     this.micButton.textContent = t(this.practiceMic ? "micOff" : "micOn");
     this.micButton.setAttribute("aria-pressed", String(this.practiceMic));
     this.micTestButton.textContent = t(testing ? "micTestStop" : "micTestStart");
@@ -433,7 +437,7 @@ export class Practice {
       active && now < this.inputPeakUntil
         ? t("micInputWarning")
         : active && now < this.gainPeakUntil
-          ? t("micGainWarning")
+          ? t(this.micAutoGain.checked ? "micAutoGainWarning" : "micGainWarning")
           : "";
     const status = this.micButton.disabled
       ? "micPending"
