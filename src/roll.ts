@@ -1,12 +1,42 @@
-import { frameAt, hzToMidi, noteName } from "./pitch";
+import { hzToMidi, noteName, referenceNoteAt, type ReferenceNote } from "./pitch";
 import { PitchViewport, pitchSpan } from "./pitch-viewport";
-import type { PitchFrame } from "./types";
 
-export interface Point {
+interface PitchPoint {
   time: number;
   midi: number | null;
+}
+export interface Point extends PitchPoint {
   color: string;
 }
+
+const maxPointGap = 0.13;
+const isolatedJump = 7;
+
+function follows(previous: PitchPoint, current: PitchPoint): boolean {
+  const gap = current.time - previous.time;
+  return gap > 0 && gap < maxPointGap;
+}
+
+function stabilizeTrace<T extends PitchPoint>(points: T[]): T[] {
+  return points.map((point, index) => {
+    const previous = points[index - 1];
+    const next = points[index + 1];
+    if (
+      point.midi === null ||
+      previous?.midi == null ||
+      next?.midi == null ||
+      !follows(previous, point) ||
+      !follows(point, next) ||
+      Math.abs(previous.midi - next.midi) > 1
+    )
+      return point;
+    const neighboringPitch = (previous.midi + next.midi) / 2;
+    return Math.abs(point.midi - neighboringPitch) >= isolatedJump
+      ? { ...previous, time: point.time, midi: neighboringPitch }
+      : point;
+  });
+}
+
 export class PianoRoll {
   private viewport = new PitchViewport();
   private context: CanvasRenderingContext2D;
@@ -22,7 +52,7 @@ export class PianoRoll {
 
   draw(
     now: number,
-    reference: PitchFrame[],
+    reference: ReferenceNote[],
     live: Point[],
     transpose: number,
     animationTime: number,
@@ -45,7 +75,7 @@ export class PianoRoll {
     const start = now - 3,
       end = now + 4;
     const nearby = reference.filter(
-      (frame) => frame.t >= start - 0.1 && frame.t <= end + 0.1,
+      (note) => note.start < end && note.end > start,
     );
     const center = this.viewport.update(
       this.followPitch(now, nearby, live, transpose, followLive),
@@ -61,13 +91,9 @@ export class PianoRoll {
     ctx.beginPath();
     ctx.rect(44, 0, width - 44, height);
     ctx.clip();
-    const melody = nearby.map((frame) => ({
-      time: frame.t,
-      midi: frame.hz ? hzToMidi(frame.hz) + transpose : null,
-      color: "#dc83ee",
-    }));
-    this.drawLine(melody, x, y, 5);
-    this.drawLine(live, x, y, 3);
+    this.drawNoteBars(nearby, x, y, height / pitchSpan, now, transpose);
+    const singing = live.filter((point) => point.time >= start - maxPointGap);
+    this.drawLive(stabilizeTrace(singing), x, y);
     ctx.strokeStyle = "#e6f6ff99";
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -79,14 +105,14 @@ export class PianoRoll {
 
   private followPitch(
     time: number,
-    reference: PitchFrame[],
+    reference: ReferenceNote[],
     live: Point[],
     transpose: number,
     followLive: boolean,
   ): number | null {
     // Look slightly ahead so the scale starts moving before the note reaches the edge.
     const targets = [0, 0.1, 0.2].flatMap((ahead) => {
-      const hz = frameAt(reference, time + ahead)?.hz;
+      const hz = referenceNoteAt(reference, time + ahead)?.hz;
       return hz ? [hzToMidi(hz) + transpose] : [];
     });
     if (targets.length) {
@@ -95,7 +121,7 @@ export class PianoRoll {
     }
     if (!this.viewport.positioned) {
       const upcoming = reference.find(
-        (frame) => frame.t >= time && frame.t <= time + 1 && frame.hz,
+        (note) => note.start >= time && note.start <= time + 1,
       )?.hz;
       if (upcoming) return hzToMidi(upcoming) + transpose;
     }
@@ -145,22 +171,43 @@ export class PianoRoll {
     }
   }
 
-  private drawLine(
+  private drawNoteBars(
+    notes: ReferenceNote[],
+    x: (n: number) => number,
+    y: (n: number) => number,
+    row: number,
+    now: number,
+    transpose: number,
+  ): void {
+    const ctx = this.context;
+    const height = Math.min(12, row * 0.55);
+    for (const note of notes) {
+      const left = x(note.start);
+      const width = x(note.end) - left;
+      const top = y(hzToMidi(note.hz) + transpose) - height / 2;
+      ctx.fillStyle =
+        now >= note.start && now < note.end ? "#c8b5ff" : "#a58af2";
+      ctx.beginPath();
+      ctx.roundRect(left, top, width, height, height / 2);
+      ctx.fill();
+    }
+  }
+
+  private drawLive(
     points: Point[],
     x: (n: number) => number,
     y: (n: number) => number,
-    width: number,
   ): void {
     const ctx = this.context;
     ctx.lineCap = "round";
-    ctx.lineWidth = width;
+    ctx.lineWidth = 3;
     let previous: Point | undefined;
     for (const point of points) {
       if (
         point.midi !== null &&
         previous?.midi != null &&
-        point.time > previous.time &&
-        point.time - previous.time < 0.13
+        follows(previous, point) &&
+        Math.abs(point.midi - previous.midi) < isolatedJump
       ) {
         ctx.strokeStyle = point.color;
         ctx.beginPath();

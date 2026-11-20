@@ -10,6 +10,8 @@
 2. 選「加入並做伴奏」。Render 取得音訊後，瀏覽器會分離人聲與伴奏並分析參考音高。第一次分離會下載並校驗約 67 MB 的模型，處理時請保持分頁開啟。只想跟唱時可選「加入並播放影片」。
 3. 選擇原曲、人聲或伴奏，開啟麥克風並播放跟唱。可依需求變速、設 A–B 循環與儲存本次成績。建議戴耳機。
 
+展開「麥克風設定」，可先測試輸入峰值並調整增益。若顯示原始輸入達到滿刻度，請調低系統或音訊介面的麥克風增益。
+
 音高圖每次顯示 18 個半音。旋律在中央區域時保持刻度固定，持續往上或往下走才平滑移動。播放、音軌、速度和 A–B 循環都在圖下方。
 
 本機版送出工作後，可關閉分頁或重新整理。用同一瀏覽器重新開啟本機網址即可接回進度。工作完成後，頁面會把音軌與參考音高存進曲庫。運算時請讓本機服務繼續執行，關閉服務或電腦會中止尚未完成的工作。本機工作暫存會在後續有新工作時清除超過 48 小時的紀錄。
@@ -57,9 +59,10 @@ GitHub Pages 提供 YouTube 串流播放、循環、變速、麥克風音高、�
 | YouTube URL 解析、oEmbed 預覽、`workers/stem-splitter/src/youtube.py` | 沿用影片 ID 型式和原版 oEmbed、yt-dlp → FFmpeg 處理方式。改由 本機服務執行，不使用瀏覽器登入憑證。                                                                         |
 | `YouTubeHTML.swift`、`VideoPlayerProtocol`                            | 沿用 IFrame 播放 API，將 Swift WKWebView 橋接改為瀏覽器事件。由本機音軌時間帶動靜音影片。                                                                                  |
 | `YINDetector.swift`、`ScoringEngine.swift`、循環與音軌控制            | 移植 YIN、音分比較、三種難度與 A–B 賦值方式。瀏覽器 AudioWorklet 偵測麥克風，Canvas 繪製音高圖。                                                                           |
-| 官方 Draft 與 Studio 兩種音軌                                         | 原版 Draft 的 BS-Roformer 依賴 Python、Redis 與 R2，Studio 依賴 StemSplit。此版沿用 MDX 人聲模型，本機運算以 ONNX Runtime 執行，參考音高採既有 YIN。輸出與官方版可能不同。 |
+| 官方 Draft 與 Studio 兩種音軌                                         | 使用 MDX 分離人聲。瀏覽器透過 SwiftF0 分析參考旋律，本機背景工具使用 YIN。                                                                  |
 | 帳號、歌詞同步、參考音高編輯與進階練習                                | 本版未完整移植。GitHub 帳號用來管理專案，練唱頁本身不需登入。                                                                                                              |
 
 官方基準為 `f3fc917a6f989e707817b9d06743b330c194a70a`。上游原始碼保存在 D 槽 `source` 資料夾，這個網頁專案存於 `web`。每次修改請先在本機執行 `npm run build`，再更新 GitHub 的建置結果。
 
 程式保留 [Intonavio 的 MIT 授權](./LICENSE)。瀏覽器分離使用 [web-audio-separation](https://github.com/incidentist/web-audio-separation)、[ONNX Runtime Web](https://github.com/microsoft/onnxruntime) 及 [UVR MDX 模型鏡像](https://huggingface.co/Blane187/all_public_uvr_models)。
+原唱參考音高使用 Lars Nieradzik 的 [SwiftF0 模型](https://github.com/lars76/swift-f0/tree/d1ba77fe5331310b778ebe126b6cb3656d41d24f)（[MIT 授權](./public/licenses/swift-f0.txt)）。

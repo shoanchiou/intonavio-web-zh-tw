@@ -97,17 +97,40 @@
               開啟麥克風
             </button>
           </section>
-          <div class="status-line">
+          <div id="mic-status-line" class="status-line">
             <span id="mic-status" data-i18n="micIdle">麥克風未開啟</span
             ><span class="headphones" data-i18n="headphones">建議使用耳機</span
             ><meter
               id="level"
               min="0"
-              max="0.15"
+              max="1"
+              high="0.9"
+              optimum="0.5"
               value="0"
-              aria-label="麥克風音量"
+              aria-label="麥克風峰值"
             ></meter>
           </div>
+          <details id="mic-settings" class="mic-settings">
+            <summary data-i18n="micSettings">麥克風設定</summary>
+            <div class="mic-settings-controls">
+              <div class="mic-gain-control">
+                <label for="mic-gain" data-i18n="micGain">麥克風增益</label>
+                <output id="mic-gain-value" for="mic-gain">100%</output>
+                <input
+                  id="mic-gain"
+                  type="range"
+                  min="25"
+                  max="200"
+                  step="5"
+                  value="100"
+                />
+              </div>
+              <button id="mic-test" class="ghost" type="button" data-i18n="micTestStart">
+                測試麥克風
+              </button>
+            </div>
+            <p id="mic-warning" class="mic-warning" role="status" hidden></p>
+          </details>
           <section class="practice-card">
             <button
               id="toggle-video"

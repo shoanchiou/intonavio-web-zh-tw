@@ -6,7 +6,15 @@ export class Microphone {
   private source?: MediaStreamAudioSourceNode;
   private node?: AudioWorkletNode;
   private generation = 0;
+  private gain = 1;
   active = false;
+
+  setGain(gain: number): void {
+    this.gain = gain;
+    const parameter = this.node?.parameters.get("gain");
+    if (parameter && this.context)
+      parameter.setTargetAtTime(gain, this.context.currentTime, 0.01);
+  }
 
   async start(onDetection: (detection: Detection) => void): Promise<void> {
     this.stop();
@@ -31,11 +39,13 @@ export class Microphone {
       this.stream = stream;
       this.context = new AudioContext({ latencyHint: "interactive" });
       await this.context.audioWorklet.addModule(
-        `${import.meta.env.BASE_URL}worklets/pitch-processor.js`,
+        `${import.meta.env.BASE_URL}worklets/pitch-processor.js?v=2`,
       );
       if (generation !== this.generation) return;
       this.source = this.context.createMediaStreamSource(stream);
-      this.node = new AudioWorkletNode(this.context, "intonavio-pitch");
+      this.node = new AudioWorkletNode(this.context, "intonavio-pitch", {
+        parameterData: { gain: this.gain },
+      });
       this.node.port.onmessage = (event: MessageEvent<Detection>) => {
         if (event.data.error) {
           this.stop();
@@ -57,8 +67,9 @@ export class Microphone {
       // The processor emits zeroes, so the microphone is never played back.
       this.node.connect(this.context.destination);
       await this.context.resume();
-      this.active = true;
+      if (generation === this.generation) this.active = true;
     } catch (error) {
+      if (generation !== this.generation) return;
       this.stop();
       throw error;
     }

@@ -1,6 +1,16 @@
 import { detectPitch } from "./yin.js";
 
 class PitchProcessor extends AudioWorkletProcessor {
+  static get parameterDescriptors() {
+    return [{
+      name: "gain",
+      defaultValue: 1,
+      minValue: 0.25,
+      maxValue: 2,
+      automationRate: "k-rate",
+    }];
+  }
+
   constructor() {
     super();
     this.buffer = new Float32Array(1024);
@@ -11,13 +21,21 @@ class PitchProcessor extends AudioWorkletProcessor {
     this.step = Math.max(1, Math.round(sampleRate / 12000));
     this.hop = 0;
     this.ready = false;
+    this.inputPeak = 0;
+    this.peak = 0;
+    this.ordered = new Float32Array(1024);
   }
-  process(inputs) {
+  process(inputs, _outputs, parameters) {
     const input = inputs[0]?.[0];
     if (!input) return true;
     try {
+      const gain = parameters.gain[0];
       for (let i = 0; i < input.length; i++) {
-        this.sum += input[i];
+        const sample = input[i];
+        const adjusted = sample * gain;
+        this.inputPeak = Math.max(this.inputPeak, Math.abs(sample));
+        this.peak = Math.max(this.peak, Math.abs(adjusted));
+        this.sum += adjusted;
         if (++this.sampleCount < this.step) continue;
         this.buffer[this.writeIndex++] = this.sum / this.step;
         this.sum = 0;
@@ -30,15 +48,20 @@ class PitchProcessor extends AudioWorkletProcessor {
         this.hop = 0;
         // YIN uses time differences: a cyclic rotation introduces one boundary,
         // so restore chronological sample order before analysing.
-        const ordered = new Float32Array(1024);
         for (let j = 0; j < 1024; j++)
-          ordered[j] = this.buffer[(this.writeIndex + j) % 1024];
+          this.ordered[j] = this.buffer[(this.writeIndex + j) % 1024];
         const result = detectPitch(
-          ordered,
+          this.ordered,
           sampleRate / this.step,
           this.scratch,
         );
-        this.port.postMessage(result);
+        this.port.postMessage({
+          ...result,
+          inputPeak: this.inputPeak,
+          peak: this.peak,
+        });
+        this.inputPeak = 0;
+        this.peak = 0;
       }
     } catch (error) {
       this.port.postMessage({ error: String(error) });

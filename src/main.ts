@@ -14,7 +14,7 @@ import { CloudAudioUnavailableError, cloudUrl, fetchCloudAudio } from "./cloud";
 import { makeDemo } from "./demo";
 import { element } from "./dom";
 import { locale, setLocale, t } from "./i18n";
-import { formatTime } from "./pitch";
+import { buildReferenceNotes, formatTime } from "./pitch";
 import { Practice } from "./practice";
 import { SeparationTask, type SeparationStage } from "./separate";
 import { deleteSong, listSongs, saveSong } from "./storage";
@@ -154,7 +154,11 @@ function renderLibrary(): void {
 
 function renderActions(): void {
   element<HTMLButtonElement>("separate").disabled = !selected || busy;
-  element<HTMLButtonElement>("analyze").disabled = !selected?.original || busy;
+  const analyze = element<HTMLButtonElement>("analyze");
+  const analysisLabel = selected?.reference?.length ? "reanalyze" : "analyze";
+  analyze.disabled = !selected?.original || busy;
+  analyze.dataset.i18n = analysisLabel;
+  analyze.textContent = t(analysisLabel);
   element<HTMLAnchorElement>("watch-video").hidden = !selected?.videoId;
   element<HTMLAnchorElement>("watch-video").href = selected?.videoId
     ? `https://www.youtube.com/watch?v=${selected.videoId}`
@@ -241,7 +245,7 @@ async function processSong(song: Song, split: boolean): Promise<void> {
   const frames = await analyzeReference(song.vocals ?? original, (fraction) =>
     updateBrowserProgress("analyzing", fraction, split),
   );
-  if (!frames.some((frame) => frame.hz)) throw new Error(t("noPitch"));
+  if (!buildReferenceNotes(frames).length) throw new Error(t("noPitch"));
   await persist({ ...song, reference: frames });
   showStatus(t(split ? "separated" : "analyzed"), "success");
 }
@@ -321,7 +325,7 @@ function runBackground(job: PendingJob, start: boolean, audio?: Blob): void {
       });
       rememberJob();
       showStatus(
-        result.reference.some((frame) => frame.hz)
+        buildReferenceNotes(result.reference).length
           ? t("separated")
           : t("noPitch"),
         "success",
@@ -489,7 +493,8 @@ prepareButton.onclick = () => {
   if (
     existing?.vocals &&
     existing.instrumental &&
-    existing.reference?.some((frame) => frame.hz)
+    existing.reference &&
+    buildReferenceNotes(existing.reference).length
   ) {
     dialog.close();
     select(existing);

@@ -1,17 +1,11 @@
 /// <reference lib="webworker" />
 import { env } from "onnxruntime-web";
-import wasmModuleUrl from "onnxruntime-web/ort-wasm-simd-threaded.jsep.mjs?url";
-import wasmBinaryUrl from "onnxruntime-web/ort-wasm-simd-threaded.jsep.wasm?url";
 import { AudioUtils, createSeparator } from "web-audio-separation";
 import { loadVerifiedModel } from "./model";
+import { wasmPaths } from "./onnx-wasm";
 import type { SeparationUpdate } from "./separate";
 
 const worker = self as unknown as DedicatedWorkerGlobalScope;
-const wasmPaths = {
-  mjs: new URL(wasmModuleUrl, worker.location.href).href,
-  wasm: new URL(wasmBinaryUrl, worker.location.href).href,
-};
-
 // The separator assigns a CDN path when loading the model. Keep the matching
 // runtime files from this build in use throughout this worker.
 Object.defineProperty(env.wasm, "wasmPaths", {

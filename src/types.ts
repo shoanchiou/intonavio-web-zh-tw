@@ -29,6 +29,8 @@ export interface Detection {
   hz: number | null;
   confidence: number;
   rms: number;
+  inputPeak?: number;
+  peak?: number;
   time?: number;
   error?: string;
 }
