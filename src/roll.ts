@@ -1,5 +1,5 @@
-import { hzToMidi, noteName, referenceNoteAt, type ReferenceNote } from "./pitch";
-import { PitchViewport, pitchSpan } from "./pitch-viewport";
+import { hzToMidi, noteName, type ReferenceNote } from "./pitch";
+import { fitPitchRange } from "./pitch-viewport";
 
 interface PitchPoint {
   time: number;
@@ -38,7 +38,7 @@ function stabilizeTrace<T extends PitchPoint>(points: T[]): T[] {
 }
 
 export class PianoRoll {
-  private viewport = new PitchViewport();
+  private range = fitPitchRange([]);
   private context: CanvasRenderingContext2D;
   constructor(private canvas: HTMLCanvasElement) {
     const context = canvas.getContext("2d");
@@ -46,8 +46,8 @@ export class PianoRoll {
     this.context = context;
   }
 
-  resetViewport(): void {
-    this.viewport.reset();
+  setPitchRange(reference: readonly ReferenceNote[], transpose: number): void {
+    this.range = fitPitchRange(reference.map(({ hz }) => hzToMidi(hz) + transpose));
   }
 
   draw(
@@ -55,8 +55,6 @@ export class PianoRoll {
     reference: ReferenceNote[],
     live: Point[],
     transpose: number,
-    animationTime: number,
-    followLive: boolean,
   ): void {
     const { canvas, context: ctx } = this;
     const width = canvas.clientWidth,
@@ -77,21 +75,17 @@ export class PianoRoll {
     const nearby = reference.filter(
       (note) => note.start < end && note.end > start,
     );
-    const center = this.viewport.update(
-      this.followPitch(now, nearby, live, transpose, followLive),
-      animationTime,
-    );
-    const low = center - pitchSpan / 2,
-      high = center + pitchSpan / 2;
+    const { low, high } = this.range;
+    const row = height / (high - low);
     const x = (time: number) =>
       44 + ((width - 44) * (time - start)) / (end - start);
-    const y = (midi: number) => (height * (high - midi)) / pitchSpan;
-    this.drawGrid(x, y, start, end, width, height, low, high);
+    const y = (midi: number) => (high - midi) * row;
+    this.drawGrid(x, y, start, end, width, height, row, low, high);
     ctx.save();
     ctx.beginPath();
     ctx.rect(44, 0, width - 44, height);
     ctx.clip();
-    this.drawNoteBars(nearby, x, y, height / pitchSpan, now, transpose);
+    this.drawNoteBars(nearby, x, y, row, now, transpose);
     const singing = live.filter((point) => point.time >= start - maxPointGap);
     this.drawLive(stabilizeTrace(singing), x, y);
     ctx.strokeStyle = "#e6f6ff99";
@@ -103,38 +97,6 @@ export class PianoRoll {
     ctx.restore();
   }
 
-  private followPitch(
-    time: number,
-    reference: ReferenceNote[],
-    live: Point[],
-    transpose: number,
-    followLive: boolean,
-  ): number | null {
-    // Look slightly ahead so the scale starts moving before the note reaches the edge.
-    const targets = [0, 0.1, 0.2].flatMap((ahead) => {
-      const hz = referenceNoteAt(reference, time + ahead)?.hz;
-      return hz ? [hzToMidi(hz) + transpose] : [];
-    });
-    if (targets.length) {
-      targets.sort((a, b) => a - b);
-      return targets[Math.floor((targets.length - 1) / 2)];
-    }
-    if (!this.viewport.positioned) {
-      const upcoming = reference.find(
-        (note) => note.start >= time && note.start <= time + 1,
-      )?.hz;
-      if (upcoming) return hzToMidi(upcoming) + transpose;
-    }
-    if (!followLive) return null;
-    const notes = live
-      .slice(-8)
-      .flatMap(({ time: at, midi }) =>
-        at >= time - 0.2 && midi !== null ? [midi] : [],
-      )
-      .sort((a, b) => a - b);
-    return notes.length >= 3 ? notes[Math.floor(notes.length / 2)] : null;
-  }
-
   private drawGrid(
     x: (n: number) => number,
     y: (n: number) => number,
@@ -142,11 +104,11 @@ export class PianoRoll {
     end: number,
     width: number,
     height: number,
+    row: number,
     low: number,
     high: number,
   ): void {
     const ctx = this.context;
-    const row = height / pitchSpan;
     ctx.font = "10px system-ui";
     ctx.textBaseline = "middle";
     for (let note = Math.ceil(low - 0.5); note <= high + 0.5; note++) {

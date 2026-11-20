@@ -444,6 +444,12 @@ meter {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+.mic-auto-gain {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
 .mic-warning {
   margin: 8px 0 0;
   color: #ffac99;
