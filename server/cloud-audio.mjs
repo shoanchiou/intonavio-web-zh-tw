@@ -16,6 +16,8 @@ export function createAudioServer({
   origin = productionOrigin,
   scratch = join(tmpdir(), "intonavio-audio"),
   fetchAudio = downloadAudio,
+  cookiesFile,
+  revision,
   verifyGoogle,
 }) {
   const recent = [];
@@ -30,7 +32,7 @@ export function createAudioServer({
     if (req.headers.origin === origin)
       res.setHeader("Access-Control-Allow-Origin", origin);
     if (req.method === "GET" && req.url === "/health")
-      return json(res, 200, { service: "intonavio-cloud-audio" });
+      return json(res, 200, { service: "intonavio-cloud-audio", revision });
 
     const googleSignIn =
       Boolean(verifyGoogle) && req.url === "/api/auth/google";
@@ -89,7 +91,7 @@ export function createAudioServer({
         match[1],
         scratch,
         AbortSignal.any([abort.signal, AbortSignal.timeout(145000)]),
-        { runtime: "node", maxBytes: 20 * 1024 * 1024 },
+        { runtime: "node", maxBytes: 20 * 1024 * 1024, cookiesFile },
       );
       if (res.destroyed) return;
       res.writeHead(200, {
@@ -115,6 +117,8 @@ if (import.meta.main) {
   const server = createAudioServer({
     verifyGoogle,
     origin: process.env.INTONAVIO_WEB_ORIGIN,
+    cookiesFile: process.env.INTONAVIO_YOUTUBE_COOKIES_FILE,
+    revision: process.env.RENDER_GIT_COMMIT,
   });
   server.listen(Number(process.env.PORT || 10000), "0.0.0.0");
 }

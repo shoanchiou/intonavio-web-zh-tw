@@ -5,16 +5,20 @@ import { createAudioServer } from "../server/cloud-audio.mjs";
 
 test("the cloud server warms up publicly and accepts audio requests with a verified Google session", async (context) => {
   const origin = "https://practice.example";
+  const revision = "c56d1976fd22ebbbcdd53cba16328530e5af8eea";
   const headers = { Origin: origin, Authorization: "Bearer verified.google.token" };
   const started = Promise.withResolvers();
   const finish = Promise.withResolvers();
   const server = createAudioServer({
     origin,
+    cookiesFile: "/etc/secrets/cookies.txt",
+    revision,
     verifyGoogle: async (credential) => credential === "verified.google.token",
     async fetchAudio(id, _scratch, _signal, options) {
       assert.equal(id, "HOfdboHvshg");
       assert.equal(options.runtime, "node");
       assert.equal(options.maxBytes, 20 * 1024 * 1024);
+      assert.equal(options.cookiesFile, "/etc/secrets/cookies.txt");
       started.resolve();
       await finish.promise;
       return Buffer.from("fake test mp3");
@@ -31,7 +35,10 @@ test("the cloud server warms up publicly and accepts audio requests with a verif
   const route = url + "/api/audio/HOfdboHvshg";
   const health = await fetch(url + "/health", { headers: { Origin: origin } });
   assert.equal(health.headers.get("access-control-allow-origin"), origin);
-  assert.equal((await health.json()).service, "intonavio-cloud-audio");
+  assert.deepEqual(await health.json(), {
+    service: "intonavio-cloud-audio",
+    revision,
+  });
   const signIn = (credential) =>
     fetch(url + "/api/auth/google", {
       method: "POST",

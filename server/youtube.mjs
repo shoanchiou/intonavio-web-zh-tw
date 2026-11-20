@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdir, mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const run = promisify(execFile);
@@ -35,17 +35,36 @@ export async function lookupVideo(id) {
   };
 }
 
+async function copyCookies(source, directory) {
+  const contents = await readFile(source, "utf8").catch((error) => {
+    if (error.code === "ENOENT") return undefined;
+    throw new Error("無法讀取 Render 的 YouTube Cookie。");
+  });
+  if (contents === undefined) return undefined;
+  const cookies = contents.replace(/^\uFEFF/, "");
+  if (!/^# (?:Netscape HTTP|HTTP) Cookie File[ \t]*\r?(?:\n|$)/.test(cookies))
+    throw new Error("YouTube Cookie 格式錯誤。請使用 Netscape cookies.txt。");
+
+  // yt-dlp writes back its cookie jar, so give it a private, disposable copy.
+  const path = join(directory, "cookies.txt");
+  await writeFile(path, cookies, { mode: 0o600 });
+  return path;
+}
+
 // Adapted from workers/stem-splitter/src/youtube.py: best audio → FFmpeg → FULL.mp3.
 export async function downloadAudio(
   id,
   scratchRoot,
   signal,
-  { runtime = "deno", maxBytes = 100 * 1024 * 1024 } = {},
+  { runtime = "deno", maxBytes = 100 * 1024 * 1024, cookiesFile } = {},
 ) {
   await mkdir(scratchRoot, { recursive: true });
   const directory = await mkdtemp(join(scratchRoot, "youtube-"));
   const ffmpegDirectory = process.env.INTONAVIO_FFMPEG_DIR;
+  let cookieCopy;
   try {
+    if (cookiesFile) cookieCopy = await copyCookies(cookiesFile, directory);
+    signal?.throwIfAborted();
     await run(
       "yt-dlp",
       [
@@ -53,6 +72,7 @@ export async function downloadAudio(
         ...(runtime === "node" ? ["--no-js-runtimes"] : []),
         "--js-runtimes",
         runtime,
+        ...(cookieCopy ? ["--cookies", cookieCopy, "--no-cache-dir"] : []),
         ...(ffmpegDirectory ? ["--ffmpeg-location", ffmpegDirectory] : []),
         "--format",
         "bestaudio/best",
@@ -64,7 +84,9 @@ export async function downloadAudio(
         "--max-filesize",
         `${Math.floor(maxBytes / (1024 * 1024))}M`,
         "--match-filters",
-        "duration <= 480 & !is_live",
+        cookieCopy
+          ? "availability = public & duration <= 480 & !is_live"
+          : "duration <= 480 & !is_live",
         "--output",
         "FULL.%(ext)s",
         "--",
@@ -90,6 +112,16 @@ export async function downloadAudio(
       throw new Error(
         "找不到 yt-dlp。請確認 yt-dlp、FFmpeg 與 Deno 已安裝並可從 PATH 執行。",
       );
+    if (cookiesFile && typeof error?.stderr === "string") {
+      // Keep downloader output for requests using the service account out of logs.
+      if (/sign in to confirm|account cookies are no longer valid/i.test(error.stderr))
+        throw new Error(
+          cookieCopy
+            ? "YouTube 要求重新驗證。請檢查 Render 的 YouTube Cookie 是否仍有效。"
+            : "YouTube 要求登入驗證。Render 找不到 cookies.txt。",
+        );
+      if (cookieCopy) throw new Error("Render 的 YouTube 音訊取得失敗。");
+    }
     if (error?.stderr) {
       const stderr = String(error.stderr);
       if (/no such option:\s*--(?:no-)?js-runtimes\b/i.test(stderr)) {

@@ -33,6 +33,8 @@ Mac 啟動器也會檢查 `ffmpeg` 和 `ffprobe` 是否能執行。兩個工具�
 
 `render.yaml` 和 `Dockerfile.render` 提供雲端取音服務。從 Render 網頁用公開 Git 儲存庫建立 **Web Service**，選 Docker、`./Dockerfile.render`、Free 和健康檢查 `/health`，或使用 Blueprint 建立。取音沿用下節的 Google 登入設定。
 
+如果 YouTube 要求登入驗證，在 Render 的 **Environment → Secret Files** 設定 Netscape 格式的 `cookies.txt` 並重新部署。後端從 `/etc/secrets/cookies.txt` 讀取檔案。有 Cookie 時，取音只接受 YouTube 標記為公開的影片。缺少檔案時，服務會嘗試以訪客身分取音。Cookie 是 YouTube 登入憑證，請存放在 Render 的 Secret Files。
+
 其他部署可用前端建置變數 `VITE_INTONAVIO_CLOUD_URL` 指定取音網址。瀏覽器會等待服務喚醒，再請 Render 驗證現有的 Google 登入並取得 MP3。分離、音高分析和歌曲保存都在瀏覽器完成。服務每次處理一首，15 分鐘最多接受六次取音，預設只允許本專案的 GitHub Pages 跨站請求。
 
 ## Google 登入
