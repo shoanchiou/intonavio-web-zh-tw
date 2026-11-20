@@ -6,15 +6,15 @@
 
 ## 使用
 
-1. 開啟 GitHub Pages 並使用 Google 帳號登入。可直接加入 YouTube 影片跟唱，也可匯入自己的音檔，在瀏覽器裡做伴奏和分析參考音高。如需從 YouTube 連結取得音訊來做伴奏，在「練唱方式」展開下載步驟，安裝對應的 Windows 或 macOS 練唱工具。保留啟動視窗，瀏覽器會開啟 `http://127.0.0.1:3218/`。
-2. 選「加入歌曲」，貼上你有權下載與處理的公開 YouTube 影片連結，再選「檢查歌曲」與「加入並處理歌曲」。第一次分離會下載並校驗約 67 MB 的模型。
+1. 開啟 GitHub Pages 並使用 Google 帳號登入，選「加入歌曲」，貼上你有權下載與處理的公開 YouTube 影片連結，再選「檢查歌曲」。
+2. 選「加入並做伴奏」。Render 取得音訊後，瀏覽器會分離人聲與伴奏並分析參考音高。第一次分離會下載並校驗約 67 MB 的模型，處理時請保持分頁開啟。只想跟唱時可選「加入並播放影片」。
 3. 選擇原曲、人聲或伴奏，開啟麥克風並播放跟唱。可依需求變速、設 A–B 循環與儲存本次成績。建議戴耳機。
 
 音高圖每次顯示 18 個半音。旋律在中央區域時保持刻度固定，持續往上或往下走才平滑移動。播放、音軌、速度和 A–B 循環都在圖下方。
 
 本機版送出工作後，可關閉分頁或重新整理。用同一瀏覽器重新開啟本機網址即可接回進度。工作完成後，頁面會把音軌與參考音高存進曲庫。運算時請讓本機服務繼續執行，關閉服務或電腦會中止尚未完成的工作。本機工作暫存會在後續有新工作時清除超過 48 小時的紀錄。
 
-歌曲也可透過本機音檔匯入。歌曲、音軌與成績存在目前瀏覽器，換電腦或瀏覽器不會同步。清除網站資料前可下載人聲與伴奏備份。
+可匯入自己的音檔在瀏覽器處理。若網頁取不到 YouTube 音訊，也可從「練唱方式」取得 Windows 或 Mac 練唱工具。歌曲、音軌與成績存在目前瀏覽器，換電腦或瀏覽器不會同步。清除網站資料前可下載人聲與伴奏備份。
 
 ## 本機版環境
 
@@ -27,25 +27,21 @@
 
 Mac 啟動器也會檢查 `ffmpeg` 和 `ffprobe` 是否能執行。兩個工具都是 Homebrew 的 `ffmpeg` 套件提供的，看到補裝或修復提示時輸入 `y`。
 
-## Render 免費試用
+## Render 雲端取音
 
-在 Render 新加坡免費服務的測試中，未登入的取音請求收到 YouTube 登入驗證要求。Render 版可讀取 `cookies.txt` Secret File，由服務端的 yt-dlp 使用 YouTube 登入工作階段下載。
+正式 GitHub Pages 使用 `https://intonavio-audio.onrender.com` 取得 YouTube 音訊。YouTube 可能對部分取音請求要求驗證。遇到取音失敗可試另一支有權處理的影片，或匯入音檔。
 
-`render.yaml` 和 `Dockerfile.render` 提供獨立的雲端取音服務。從 Render 網頁用公開 Git 儲存庫建立 **Web Service**，選 Docker、`./Dockerfile.render`、Free 和健康檢查 `/health`。在 Render 的「環境變數」生成 `INTONAVIO_CLOUD_TOKEN`，只把試用碼私下提供給受邀者。也可使用 Blueprint，由 Render 自動生成試用碼。
+`render.yaml` 和 `Dockerfile.render` 提供雲端取音服務。從 Render 網頁用公開 Git 儲存庫建立 **Web Service**，選 Docker、`./Dockerfile.render`、Free 和健康檢查 `/health`，或使用 Blueprint 建立。取音沿用下節的 Google 登入設定。
 
-1. 用無痕視窗登入自己的 YouTube 小帳號，在同一視窗開啟 `https://www.youtube.com/robots.txt`，用可信任的本機擴充功能匯出該網站的 Netscape `cookies.txt`，再關閉無痕視窗。[yt-dlp 匯出說明](https://github.com/yt-dlp/yt-dlp/wiki/Extractors#exporting-youtube-cookies)
-2. 在 Render 的 `intonavio-audio` 服務選 **Environment → Secret Files → Add Secret File**。Filename 填 `cookies.txt`，Contents 貼上匯出的內容。儲存並部署包含新 Dockerfile 的版本。[Render Secret Files 說明](https://render.com/docs/configure-environment-variables#secret-files)
-3. 用有權處理的公開短片測試。若 Render 日誌顯示 YouTube 要求重新驗證，請更新同一個 Secret File。若新 Cookie 仍失敗，Render 機房的 IP 可能也受到限制。
+如果 YouTube 要求登入驗證，在 Render 的 **Environment → Secret Files** 設定 Netscape 格式的 `cookies.txt` 並重新部署。後端從 `/etc/secrets/cookies.txt` 讀取檔案。有 Cookie 時，取音只接受 YouTube 標記為公開的影片。缺少檔案時，服務會嘗試以訪客身分取音。Cookie 是 YouTube 登入憑證，請存放在 Render 的 Secret Files。
 
-服務每次下載會將 `/etc/secrets/cookies.txt` 複製到權限為 `0600` 的暫存檔，結束時與下載檔一起刪除。Cookie 只應貼到 Render 的 Secret Files。
-
-正式把網址接到網頁前，使用有權處理的短片驗證 Render 能取得音訊。前端建置時設定公開的 `VITE_INTONAVIO_CLOUD_URL` 為該服務 URL，就會顯示雲端試用選項。瀏覽器會等待服務喚醒，再取得 MP3 並分析。試用碼留在當前網頁，歌曲仍由瀏覽器分離與保存。服務每次處理一首，15 分鐘最多接受六次取音，預設只允許本專案的 GitHub Pages 跨站請求。
+其他部署可用前端建置變數 `VITE_INTONAVIO_CLOUD_URL` 指定取音網址。瀏覽器會等待服務喚醒，再請 Render 驗證現有的 Google 登入並取得 MP3。分離、音高分析和歌曲保存都在瀏覽器完成。服務每次處理一首，15 分鐘最多接受六次取音，預設只允許本專案的 GitHub Pages 跨站請求。
 
 ## Google 登入
 
 設定 Render 環境變數 `INTONAVIO_GOOGLE_CLIENT_ID`，重建服務後可驗證 Google 登入。前端用相同的 Web 用戶端 ID 建置 `VITE_INTONAVIO_GOOGLE_CLIENT_ID`，並以 `VITE_INTONAVIO_AUTH_URL` 指定驗證服務。Google Cloud 的核准 JavaScript 來源是 `https://shoanchiou.github.io`。
 
-正式 GitHub Pages 已設定 Google 登入。登入後曲庫仍儲存在目前瀏覽器，跨裝置同步需要另外部署持久化資料庫。Windows 和 Mac 套件留在本機使用流程。雲端取音沿用各自的試用設定。
+正式 GitHub Pages 已設定 Google 登入。登入後曲庫仍儲存在目前瀏覽器，跨裝置同步需要另外部署持久化資料庫。
 
 ## 架構與費用
 

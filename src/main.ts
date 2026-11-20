@@ -10,7 +10,7 @@ import {
   type JobStage,
   type PendingJob,
 } from "./background";
-import { cloudUrl, fetchCloudAudio } from "./cloud";
+import { CloudAudioUnavailableError, cloudUrl, fetchCloudAudio } from "./cloud";
 import { makeDemo } from "./demo";
 import { element } from "./dom";
 import { locale, setLocale, t } from "./i18n";
@@ -33,6 +33,7 @@ const status = element("status");
 const progress = element<HTMLProgressElement>("processing-progress");
 const fileInput = element<HTMLInputElement>("file");
 const dialog = element<HTMLDialogElement>("add-dialog");
+const cloudErrorDialog = element<HTMLDialogElement>("cloud-error-dialog");
 const linkInput = element<HTMLInputElement>("youtube-url");
 const preview = element("youtube-preview");
 const separation = new SeparationTask();
@@ -62,6 +63,7 @@ function showError(error: unknown): void {
         : String(error),
     cancelled ? "" : "error",
   );
+  if (error instanceof CloudAudioUnavailableError) cloudErrorDialog.showModal();
 }
 function select(song?: Song): void {
   selected = song;
@@ -349,13 +351,12 @@ function sendSongToBackground(
 
 const dialogStatus = element("dialog-status");
 const prepareButton = element<HTMLButtonElement>("prepare");
-const cloudAccess = element("cloud-access");
-const cloudCode = element<HTMLInputElement>("cloud-code");
 const streamButton = element<HTMLButtonElement>("add-stream");
 const environmentDialog = element<HTMLDialogElement>("environment-dialog");
 const setupInstructions = element<HTMLDetailsElement>("setup-instructions");
 const setupPrepare = element<HTMLButtonElement>("setup-prepare-song");
 const setupComputer = element<HTMLFieldSetElement>("setup-computer");
+if (cloudActive) prepareButton.dataset.i18n = "prepareOnline";
 
 function showSetupFor(os: string): void {
   setupComputer
@@ -411,7 +412,6 @@ function resetPreview(): void {
   preview.replaceChildren();
   dialogStatus.textContent = "";
   prepareButton.hidden = true;
-  cloudAccess.hidden = true;
   streamButton.hidden = true;
   setupPrepare.hidden = true;
 }
@@ -430,11 +430,8 @@ function renderPreview(info: VideoInfo): void {
   preview.append(image, caption);
   dialogStatus.textContent = "";
   prepareButton.hidden = !isLocalApp && !cloudActive;
-  cloudAccess.hidden =
-    !cloudActive ||
-    songs.some((song) => song.videoId === info.id && song.original);
   streamButton.hidden = false;
-  setupPrepare.hidden = isLocalApp;
+  setupPrepare.hidden = isLocalApp || cloudActive;
 }
 element<HTMLFormElement>("youtube-form").onsubmit = async (event) => {
   event.preventDefault();
@@ -463,6 +460,7 @@ element<HTMLFormElement>("youtube-form").onsubmit = async (event) => {
 };
 linkInput.oninput = resetPreview;
 element("close-dialog").onclick = () => dialog.close();
+element("close-cloud-error").onclick = () => cloudErrorDialog.close();
 dialog.addEventListener("close", resetPreview);
 streamButton.onclick = () => {
   const info = video;
@@ -488,19 +486,17 @@ prepareButton.onclick = () => {
   const info = video;
   if (!info) return;
   const existing = songs.find((song) => song.videoId === info.id);
-  if (existing?.reference?.some((frame) => frame.hz)) {
+  if (
+    existing?.vocals &&
+    existing.instrumental &&
+    existing.reference?.some((frame) => frame.hz)
+  ) {
     dialog.close();
     select(existing);
     showStatus(t("analyzed"), "success");
     return;
   }
   if (cloudActive) {
-    const code = cloudCode.value.trim();
-    if (!existing?.original && code.length < 24) {
-      dialogStatus.textContent = t("cloudCodeHint");
-      cloudCode.focus();
-      return;
-    }
     dialog.close();
     void runTask(async () => {
       if (existing?.original) return processSong(existing, true);
@@ -508,7 +504,6 @@ prepareButton.onclick = () => {
       request = controller;
       const audio = await fetchCloudAudio(
         info.id,
-        code,
         controller.signal,
         showStatus,
       );
@@ -565,6 +560,7 @@ element("separate").onclick = () => {
     element("add-song").click();
     linkInput.value = `https://www.youtube.com/watch?v=${song.videoId}`;
     element<HTMLFormElement>("youtube-form").requestSubmit();
+    if (cloudActive && !prepareButton.hidden) prepareButton.focus();
     return;
   }
   if (isLocalApp) sendSongToBackground(song, song.original);

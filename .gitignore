@@ -5,6 +5,6 @@ dist/
 *.log
 test-results/
 *.wav
-cookies.txt
 *.mp3
 *.onnx
+cookies.txt

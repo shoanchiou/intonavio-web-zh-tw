@@ -1,4 +1,3 @@
-import { createHash, timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -8,28 +7,19 @@ const productionOrigin = "https://shoanchiou.github.io";
 const windowMs = 15 * 60 * 1000;
 const requestsPerWindow = 6;
 
-function digest(value) {
-  return createHash("sha256").update(value).digest();
-}
-
 function json(res, status, body) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(body));
 }
 
 export function createAudioServer({
-  token,
   origin = productionOrigin,
   scratch = join(tmpdir(), "intonavio-audio"),
   fetchAudio = downloadAudio,
   cookiesFile,
+  revision,
   verifyGoogle,
 }) {
-  if (!token || token.length < 24)
-    throw new Error(
-      "Set INTONAVIO_CLOUD_TOKEN to a strong random access code.",
-    );
-  const authorized = digest("Bearer " + token);
   const recent = [];
   let active = false;
 
@@ -42,7 +32,7 @@ export function createAudioServer({
     if (req.headers.origin === origin)
       res.setHeader("Access-Control-Allow-Origin", origin);
     if (req.method === "GET" && req.url === "/health")
-      return json(res, 200, { service: "intonavio-cloud-audio" });
+      return json(res, 200, { service: "intonavio-cloud-audio", revision });
 
     const googleSignIn =
       Boolean(verifyGoogle) && req.url === "/api/auth/google";
@@ -58,23 +48,20 @@ export function createAudioServer({
       return;
     }
     if (req.method !== "POST") return json(res, 405, { error: "method" });
-    if (googleSignIn) {
-      const idToken =
-        /^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/.exec(
-          req.headers.authorization ?? "",
-        )?.[1];
-      if (!idToken || idToken.length > 4096)
+    const idToken =
+      /^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/.exec(
+        req.headers.authorization ?? "",
+      )?.[1];
+    if (!verifyGoogle || !idToken || idToken.length > 4096)
+      return json(res, 401, { error: "auth" });
+    try {
+      if (!(await verifyGoogle(idToken)))
         return json(res, 401, { error: "auth" });
-      try {
-        if (await verifyGoogle(idToken))
-          return json(res, 200, { signedIn: true });
-      } catch {
-        // Token details must not be written to logs.
-      }
+    } catch {
+      // Keep credential details out of the logs.
       return json(res, 401, { error: "auth" });
     }
-    if (!timingSafeEqual(digest(req.headers.authorization ?? ""), authorized))
-      return json(res, 401, { error: "access" });
+    if (googleSignIn) return json(res, 200, { signedIn: true });
     if (
       (req.headers["content-length"] !== undefined &&
         req.headers["content-length"] !== "0") ||
@@ -129,9 +116,9 @@ if (import.meta.main) {
     : undefined;
   const server = createAudioServer({
     verifyGoogle,
-    token: process.env.INTONAVIO_CLOUD_TOKEN,
     origin: process.env.INTONAVIO_WEB_ORIGIN,
     cookiesFile: process.env.INTONAVIO_YOUTUBE_COOKIES_FILE,
+    revision: process.env.RENDER_GIT_COMMIT,
   });
   server.listen(Number(process.env.PORT || 10000), "0.0.0.0");
 }

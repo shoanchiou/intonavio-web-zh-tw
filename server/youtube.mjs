@@ -35,6 +35,22 @@ export async function lookupVideo(id) {
   };
 }
 
+async function copyCookies(source, directory) {
+  const contents = await readFile(source, "utf8").catch((error) => {
+    if (error.code === "ENOENT") return undefined;
+    throw new Error("無法讀取 Render 的 YouTube Cookie。");
+  });
+  if (contents === undefined) return undefined;
+  const cookies = contents.replace(/^\uFEFF/, "");
+  if (!/^# (?:Netscape HTTP|HTTP) Cookie File[ \t]*\r?(?:\n|$)/.test(cookies))
+    throw new Error("YouTube Cookie 格式錯誤。請使用 Netscape cookies.txt。");
+
+  // yt-dlp writes back its cookie jar, so give it a private, disposable copy.
+  const path = join(directory, "cookies.txt");
+  await writeFile(path, cookies, { mode: 0o600 });
+  return path;
+}
+
 // Adapted from workers/stem-splitter/src/youtube.py: best audio → FFmpeg → FULL.mp3.
 export async function downloadAudio(
   id,
@@ -45,27 +61,10 @@ export async function downloadAudio(
   await mkdir(scratchRoot, { recursive: true });
   const directory = await mkdtemp(join(scratchRoot, "youtube-"));
   const ffmpegDirectory = process.env.INTONAVIO_FFMPEG_DIR;
+  let cookieCopy;
   try {
-    let cookieCopy;
-    if (cookiesFile) {
-      const cookies = await readFile(cookiesFile, "utf8").catch((error) => {
-        if (error.code === "ENOENT") return undefined;
-        throw new Error(
-          "無法讀取 YouTube Cookie。請確認 Render 的 Secret Files 已設定 cookies.txt。",
-        );
-      });
-      if (cookies !== undefined) {
-        const netscape = cookies.replace(/^\uFEFF/, "");
-        const firstLine = netscape.split(/\r?\n/, 1)[0];
-        if (!/^# (?:Netscape HTTP|HTTP) Cookie File\s*$/.test(firstLine))
-          throw new Error(
-            "YouTube Cookie 格式錯誤。請匯出 Netscape cookies.txt 並更新 Render 的 Secret File。",
-          );
-        // yt-dlp rewrites its cookie jar. Keep the mounted secret read-only.
-        cookieCopy = join(directory, "cookies.txt");
-        await writeFile(cookieCopy, netscape, { mode: 0o600, flag: "wx" });
-      }
-    }
+    if (cookiesFile) cookieCopy = await copyCookies(cookiesFile, directory);
+    signal?.throwIfAborted();
     await run(
       "yt-dlp",
       [
@@ -85,7 +84,9 @@ export async function downloadAudio(
         "--max-filesize",
         `${Math.floor(maxBytes / (1024 * 1024))}M`,
         "--match-filters",
-        "duration <= 480 & !is_live",
+        cookieCopy
+          ? "availability = public & duration <= 480 & !is_live"
+          : "duration <= 480 & !is_live",
         "--output",
         "FULL.%(ext)s",
         "--",
@@ -107,20 +108,20 @@ export async function downloadAudio(
       );
     return await readFile(result);
   } catch (error) {
-    if (cookiesFile && typeof error?.stderr === "string") {
-      // Render logs can be shared. Surface fixed messages for authenticated requests.
-      if (/sign in to confirm|account cookies are no longer valid/i.test(error.stderr))
-        throw new Error(
-          "YouTube 要求重新驗證。請在 Render 的 Secret Files 設定或更新 cookies.txt。若仍失敗，可能是 Render IP 受限。",
-        );
-      throw new Error(
-        "Render 的 yt-dlp 下載失敗。請確認影片可觀看，並檢查服務的下載環境。",
-      );
-    }
     if (error?.code === "ENOENT")
       throw new Error(
         "找不到 yt-dlp。請確認 yt-dlp、FFmpeg 與 Deno 已安裝並可從 PATH 執行。",
       );
+    if (cookiesFile && typeof error?.stderr === "string") {
+      // Keep downloader output for requests using the service account out of logs.
+      if (/sign in to confirm|account cookies are no longer valid/i.test(error.stderr))
+        throw new Error(
+          cookieCopy
+            ? "YouTube 要求重新驗證。請檢查 Render 的 YouTube Cookie 是否仍有效。"
+            : "YouTube 要求登入驗證。Render 找不到 cookies.txt。",
+        );
+      if (cookieCopy) throw new Error("Render 的 YouTube 音訊取得失敗。");
+    }
     if (error?.stderr) {
       const stderr = String(error.stderr);
       if (/no such option:\s*--(?:no-)?js-runtimes\b/i.test(stderr)) {

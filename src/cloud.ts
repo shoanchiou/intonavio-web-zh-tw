@@ -1,11 +1,24 @@
 /// <reference types="vite/client" />
 import { t } from "./i18n";
 
-export const cloudUrl = (import.meta.env.VITE_INTONAVIO_CLOUD_URL ?? "")
+export const googleSessionKey = "intonavio-google-entry";
+export const publishedRenderUrl =
+  location.origin === "https://shoanchiou.github.io"
+    ? "https://intonavio-audio.onrender.com"
+    : "";
+export const cloudUrl = (
+  import.meta.env.VITE_INTONAVIO_CLOUD_URL ?? publishedRenderUrl
+)
   .trim()
   .replace(/\/+$/, "");
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export class CloudAudioUnavailableError extends Error {
+  constructor() {
+    super(t("cloudNoAudio"));
+  }
+}
 
 export async function waitForAudioService(
   base: string,
@@ -39,10 +52,11 @@ export async function waitForAudioService(
 
 export async function fetchCloudAudio(
   videoId: string,
-  accessCode: string,
   signal: AbortSignal,
   onStatus: (message: string) => void,
 ): Promise<Blob> {
+  const idToken = sessionStorage.getItem(googleSessionKey);
+  if (!idToken) throw new Error(t("cloudSignInRequired"));
   onStatus(t("cloudWaking"));
   if (!(await waitForAudioService(cloudUrl, signal)))
     throw new Error(t("cloudWakeTimeout"));
@@ -54,7 +68,7 @@ export async function fetchCloudAudio(
       cloudUrl + "/api/audio/" + encodeURIComponent(videoId),
       {
         method: "POST",
-        headers: { Authorization: "Bearer " + accessCode },
+        headers: { Authorization: "Bearer " + idToken },
         cache: "no-store",
         redirect: "error",
         signal: AbortSignal.any([signal, AbortSignal.timeout(155000)]),
@@ -64,9 +78,14 @@ export async function fetchCloudAudio(
     signal.throwIfAborted();
     throw new Error(t("cloudConnection"));
   }
-  if (response.status === 401) throw new Error(t("cloudWrongCode"));
+  if (response.status === 401) throw new Error(t("cloudSignInRequired"));
   if (response.status === 409 || response.status === 429)
     throw new Error(t("cloudBusy"));
+  if (response.status === 502) {
+    const body: { error?: string } | null = await response.json().catch(() => null);
+    signal.throwIfAborted();
+    if (body?.error === "unavailable") throw new CloudAudioUnavailableError();
+  }
   if (
     !response.ok ||
     !response.headers.get("content-type")?.includes("audio/mpeg")

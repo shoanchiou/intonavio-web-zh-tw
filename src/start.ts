@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import "./style.css";
-import { waitForAudioService } from "./cloud";
+import { googleSessionKey, publishedRenderUrl, waitForAudioService } from "./cloud";
 import { element } from "./dom";
 import { locale, setLocale, t } from "./i18n";
 import { isLocalApp } from "./youtube";
@@ -23,20 +23,15 @@ interface GoogleIdentity {
   disableAutoSelect(): void;
 }
 
-const publishedSite = location.origin === "https://shoanchiou.github.io";
 const clientId = (
   import.meta.env.VITE_INTONAVIO_GOOGLE_CLIENT_ID ??
-  (publishedSite
+  (publishedRenderUrl
     ? "403786780252-gd53230p4hisf9t8bvhc8hv1vn7lqaut.apps.googleusercontent.com"
     : "")
 ).trim();
-const authUrl = (
-  import.meta.env.VITE_INTONAVIO_AUTH_URL ??
-  (publishedSite ? "https://intonavio-audio.onrender.com" : "")
-)
+const authUrl = (import.meta.env.VITE_INTONAVIO_AUTH_URL ?? publishedRenderUrl)
   .trim()
   .replace(/\/+$/, "");
-const sessionKey = "intonavio-google-entry";
 const gate = element("google-entry");
 const app = element("practice-app");
 const signOut = element<HTMLButtonElement>("google-sign-out");
@@ -97,14 +92,14 @@ async function start(): Promise<void> {
   }
 
   signOut.onclick = () => {
-    sessionStorage.removeItem(sessionKey);
+    sessionStorage.removeItem(googleSessionKey);
     location.reload();
   };
-  const remembered = sessionStorage.getItem(sessionKey);
+  const remembered = sessionStorage.getItem(googleSessionKey);
   if (remembered) {
     try {
       if (await verify(authUrl, remembered)) return openPractice(true);
-      sessionStorage.removeItem(sessionKey);
+      sessionStorage.removeItem(googleSessionKey);
     } catch {
       status.textContent = t("googleUnavailable");
     }
@@ -120,10 +115,10 @@ async function start(): Promise<void> {
       busy = true;
       try {
         if (await verify(authUrl, credential)) {
-          sessionStorage.setItem(sessionKey, credential);
+          sessionStorage.setItem(googleSessionKey, credential);
           signOut.onclick = () => {
             identity.disableAutoSelect();
-            sessionStorage.removeItem(sessionKey);
+            sessionStorage.removeItem(googleSessionKey);
             location.reload();
           };
           await openPractice(true);
