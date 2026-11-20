@@ -22,7 +22,7 @@ test(
         "  esac",
         "  shift",
         "done",
-        '[ "$cookie" = "$PWD/cookies.txt" ]',
+        '[ "$cookie" -ef cookies.txt ]',
         '[ "$(head -n 1 "$cookie")" = "# Netscape HTTP Cookie File" ]',
         '[ "$filter" = "availability = public & duration <= 480 & !is_live" ]',
         '[ "$no_cache" = 1 ]',
