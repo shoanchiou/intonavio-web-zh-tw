@@ -1,3 +1,5 @@
+import { isYouTubeIdTitle } from "./youtube";
+
 const zhTW = {
   "setup-engine": "正在準備本機運算環境…",
   backgroundHint:
@@ -56,6 +58,7 @@ const zhTW = {
   alreadyRunning: "已經啟動練唱工具？",
   track: "音軌",
   streamOnly: "加入並播放影片",
+  youtubeVideo: "YouTube 影片",
   openWatch: "在 YouTube 開啟",
   projectGitHub: "本專案 GitHub",
   addSong: "＋ 加入歌曲",
@@ -251,6 +254,7 @@ const en: Record<Key, string> = {
   alreadyRunning: "Is the practice tool already running?",
   track: "Audio track",
   streamOnly: "Add and play video",
+  youtubeVideo: "YouTube video",
   openWatch: "Open on YouTube",
   projectGitHub: "Project on GitHub",
   addSong: "+ Add song",
@@ -384,6 +388,9 @@ export let locale: "zh-TW" | "en" =
   localStorage.getItem("intonavio-locale") === "en" ? "en" : "zh-TW";
 export function t(key: Key): string {
   return (locale === "en" ? en : zhTW)[key];
+}
+export function displaySongTitle(title: string, videoId?: string): string {
+  return videoId && isYouTubeIdTitle(title, videoId) ? t("youtubeVideo") : title;
 }
 export function setLocale(value: "zh-TW" | "en"): void {
   locale = value;

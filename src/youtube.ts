@@ -7,6 +7,10 @@ export const LOCAL_URL = "http://127.0.0.1:3218/";
 export const isLocalApp =
   globalThis.location?.origin === new URL(LOCAL_URL).origin;
 
+export function isYouTubeIdTitle(title: string, id: string): boolean {
+  return title === `YouTube · ${id}`;
+}
+
 // Formats supported by the original YouTubeURLValidator, with strict host and ID checks.
 export function extractVideoId(value: string): string | null {
   try {
@@ -44,11 +48,35 @@ async function check(response: Response): Promise<Response> {
 }
 export async function previewVideo(
   id: string,
-  signal: AbortSignal,
+  signal?: AbortSignal,
 ): Promise<VideoInfo> {
-  return (
-    await check(await fetch(`/api/youtube/metadata/${id}`, { signal }))
-  ).json();
+  if (isLocalApp)
+    return (
+      await check(await fetch(`/api/youtube/metadata/${id}`, { signal }))
+    ).json();
+
+  const url = new URL("https://www.youtube.com/oembed");
+  url.searchParams.set("url", `https://www.youtube.com/watch?v=${id}`);
+  url.searchParams.set("format", "json");
+  const deadline = AbortSignal.timeout(7000);
+  const response = await check(
+    await fetch(url, {
+      credentials: "omit",
+      redirect: "error",
+      signal: signal ? AbortSignal.any([signal, deadline]) : deadline,
+    }),
+  );
+  const data: { title?: unknown; author_name?: unknown } = await response.json();
+  if (typeof data.title !== "string" || !data.title.trim())
+    throw new Error("YouTube 影片沒有提供標題。");
+  return {
+    id,
+    title: data.title.trim().slice(0, 200),
+    artist:
+      typeof data.author_name === "string"
+        ? data.author_name.trim().slice(0, 200)
+        : "",
+  };
 }
 export async function importVideo(
   id: string,

@@ -1,5 +1,5 @@
 import { element } from "./dom";
-import { t } from "./i18n";
+import { displaySongTitle, t } from "./i18n";
 import { Microphone } from "./microphone";
 import {
   buildReferenceNotes,
@@ -401,7 +401,9 @@ export class Practice {
       this.song && (!this.streaming || this.video.canPlay),
     );
     this.seek.disabled = !playable;
-    element("song-title").textContent = this.song?.title ?? t("ready");
+    element("song-title").textContent = this.song
+      ? displaySongTitle(this.song.title, this.song.videoId)
+      : t("ready");
     element("song-artist").textContent = this.song?.artist ?? "";
     for (const id of ["play", "a", "b", "clear-loop"])
       element<HTMLButtonElement>(id).disabled = !playable;

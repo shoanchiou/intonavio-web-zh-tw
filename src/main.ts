@@ -13,15 +13,16 @@ import {
 import { CloudAudioUnavailableError, cloudUrl, fetchCloudAudio } from "./cloud";
 import { makeDemo } from "./demo";
 import { element } from "./dom";
-import { locale, setLocale, t } from "./i18n";
+import { displaySongTitle, locale, setLocale, t } from "./i18n";
 import { buildReferenceNotes, formatTime } from "./pitch";
 import { Practice } from "./practice";
 import { SeparationTask, type SeparationStage } from "./separate";
-import { deleteSong, listSongs, saveSong } from "./storage";
+import { deleteSong, listSongs, saveSong, saveVideoTitle } from "./storage";
 import type { Difficulty, Song } from "./types";
 import {
   extractVideoId,
   isLocalApp,
+  isYouTubeIdTitle,
   previewVideo,
   LOCAL_URL,
   type VideoInfo,
@@ -47,6 +48,7 @@ let request: AbortController | undefined;
 let backgroundJob: PendingJob | undefined;
 let previewRequest: AbortController | undefined;
 let downloadUrls: string[] = [];
+const pendingTitleLookups = new Set<string>();
 
 function showStatus(message: string, kind = ""): void {
   status.textContent = message;
@@ -70,6 +72,39 @@ function select(song?: Song): void {
   practice.select(song);
   renderLibrary();
   renderActions();
+  if (song) void refreshVideoTitle(song);
+}
+async function refreshVideoTitle(song: Song): Promise<void> {
+  const { id, videoId } = song;
+  if (
+    !videoId ||
+    !isYouTubeIdTitle(song.title, videoId) ||
+    pendingTitleLookups.has(id)
+  )
+    return;
+  pendingTitleLookups.add(id);
+  try {
+    const info = await previewVideo(videoId);
+    const current = songs.find((item) => item.id === id);
+    if (
+      !current ||
+      current.videoId !== videoId ||
+      !isYouTubeIdTitle(current.title, videoId)
+    )
+      return;
+    current.title = info.title;
+    current.artist = info.artist;
+    renderLibrary();
+    if (selected === current) {
+      practice.render();
+      renderActions();
+    }
+    await saveVideoTitle(id, info);
+  } catch {
+    // Missing metadata should never prevent playing a saved video.
+  } finally {
+    pendingTitleLookups.delete(id);
+  }
 }
 function setBusy(value: boolean, cancellable = false): void {
   busy = value;
@@ -89,6 +124,15 @@ function setBusy(value: boolean, cancellable = false): void {
   renderActions();
 }
 async function persist(song: Song): Promise<void> {
+  const current = songs.find((item) => item.id === song.id);
+  if (
+    current &&
+    song.videoId &&
+    current.videoId === song.videoId &&
+    isYouTubeIdTitle(song.title, song.videoId) &&
+    !isYouTubeIdTitle(current.title, song.videoId)
+  )
+    song = { ...song, title: current.title, artist: current.artist };
   await saveSong(song);
   songs = [song, ...songs.filter((item) => item.id !== song.id)].sort(
     (a, b) => b.createdAt - a.createdAt,
@@ -106,12 +150,13 @@ function renderLibrary(): void {
     library.append(empty);
   }
   for (const song of songs) {
+    const name = displaySongTitle(song.title, song.videoId);
     const item = document.createElement("div");
     item.className = "song-item";
     const button = document.createElement("button");
     button.className = `song-button${song === selected ? " active" : ""}`;
     button.disabled = busy;
-    button.title = song.title;
+    button.title = name;
     if (song.videoId) {
       const image = document.createElement("img");
       image.src = `https://i.ytimg.com/vi/${song.videoId}/mqdefault.jpg`;
@@ -120,7 +165,7 @@ function renderLibrary(): void {
       button.append(image);
     }
     const title = document.createElement("strong");
-    title.textContent = song.title;
+    title.textContent = name;
     const detail = document.createElement("small");
     detail.textContent = [
       song.artist,
@@ -136,7 +181,7 @@ function renderLibrary(): void {
     const remove = document.createElement("button");
     remove.className = "song-delete";
     remove.textContent = "×";
-    remove.setAttribute("aria-label", `${t("delete")} ${song.title}`);
+    remove.setAttribute("aria-label", `${t("delete")} ${name}`);
     remove.disabled = busy;
     remove.onclick = () => {
       if (!window.confirm(t("confirmDelete"))) return;
@@ -179,7 +224,7 @@ function renderActions(): void {
       const url = URL.createObjectURL(song[kind]);
       downloadUrls.push(url);
       link.href = url;
-      link.download = `${song.title}-${t(kind)}.${song[kind].type.includes("mpeg") ? "mp3" : "wav"}`;
+      link.download = `${displaySongTitle(song.title, song.videoId)}-${t(kind)}.${song[kind].type.includes("mpeg") ? "mp3" : "wav"}`;
       link.textContent = t(label);
       links.append(link);
     }
@@ -430,7 +475,9 @@ function renderPreview(info: VideoInfo): void {
   image.src = `https://i.ytimg.com/vi/${info.id}/mqdefault.jpg`;
   image.alt = "";
   const caption = document.createElement("p");
-  caption.textContent = [info.title, info.artist].filter(Boolean).join(" · ");
+  caption.textContent = [displaySongTitle(info.title, info.id), info.artist]
+    .filter(Boolean)
+    .join(" · ");
   preview.append(image, caption);
   dialogStatus.textContent = "";
   prepareButton.hidden = !isLocalApp && !cloudActive;
@@ -445,8 +492,11 @@ element<HTMLFormElement>("youtube-form").onsubmit = async (event) => {
     dialogStatus.textContent = t("badUrl");
     return;
   }
-  if (!isLocalApp) {
-    renderPreview({ id, title: `YouTube · ${id}`, artist: "" });
+  const known = songs.find(
+    (song) => song.videoId === id && !isYouTubeIdTitle(song.title, id),
+  );
+  if (known) {
+    renderPreview({ id, title: known.title, artist: known.artist ?? "" });
     return;
   }
   const controller = new AbortController();
@@ -457,9 +507,11 @@ element<HTMLFormElement>("youtube-form").onsubmit = async (event) => {
     if (controller.signal.aborted) return;
     renderPreview(info);
   } catch (error) {
-    if (!controller.signal.aborted)
+    if (controller.signal.aborted) return;
+    if (isLocalApp)
       dialogStatus.textContent =
         error instanceof Error ? error.message : String(error);
+    else renderPreview({ id, title: `YouTube · ${id}`, artist: "" });
   }
 };
 linkInput.oninput = resetPreview;
@@ -472,7 +524,14 @@ streamButton.onclick = () => {
   dialog.close();
   const existing = songs.find((song) => song.videoId === info.id);
   void runTask(async () => {
-    if (existing) select(existing);
+    if (existing) {
+      if (
+        isYouTubeIdTitle(existing.title, info.id) &&
+        info.title !== existing.title
+      )
+        await persist({ ...existing, title: info.title, artist: info.artist });
+      else select(existing);
+    }
     else
       await persist({
         id: `youtube-${info.id}`,
