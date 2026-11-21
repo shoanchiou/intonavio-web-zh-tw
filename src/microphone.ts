@@ -64,7 +64,7 @@ export class Microphone {
       this.stream = stream;
       this.context = new AudioContext({ latencyHint: "interactive" });
       await this.context.audioWorklet.addModule(
-        `${import.meta.env.BASE_URL}worklets/pitch-processor.js?v=2`,
+        `${import.meta.env.BASE_URL}worklets/pitch-processor.js?v=3`,
       );
       if (generation !== this.generation) return;
       this.source = this.context.createMediaStreamSource(stream);
