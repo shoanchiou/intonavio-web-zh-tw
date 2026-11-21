@@ -4,6 +4,7 @@ export function detectPitch(
   samples,
   sampleRate,
   scratch = new Float32Array(512),
+  minimumRms = 0.006,
 ) {
   const count = Math.floor(samples.length / 2);
   const maxLag = Math.min(
@@ -15,7 +16,7 @@ export function detectPitch(
   let energy = 0;
   for (let i = 0; i < samples.length; i++) energy += samples[i] * samples[i];
   const rms = Math.sqrt(energy / samples.length);
-  if (!Number.isFinite(rms) || rms < 0.006 || minLag >= maxLag)
+  if (!Number.isFinite(rms) || rms < minimumRms || minLag >= maxLag)
     return { hz: null, confidence: 0, rms };
   let cumulative = 0;
   scratch[0] = 1;
